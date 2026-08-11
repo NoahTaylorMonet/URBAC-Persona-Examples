@@ -149,6 +149,18 @@ h2 .n {
 .card .role-line { font-size: 11.5px; color: var(--cp-text-soft); margin-top: 3px; line-height: 1.4; }
 .card p { margin: 0; font-size: 13px; color: var(--cp-text-muted); }
 .card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 4px; }
+.card .ic[data-script] { cursor: pointer; position: relative; }
+.card .ic[data-script]:hover, .card .ic[data-script]:focus-visible { filter: brightness(0.92); }
+.card .ic[data-script]:focus-visible { outline: 2px solid var(--cp-link); outline-offset: 2px; }
+.card .ic[data-script]::after {
+  content: 'Click to copy setup script';
+  position: absolute; top: 110%; left: 0; z-index: 4;
+  white-space: nowrap; font-size: 10.5px; font-weight: 600;
+  color: var(--cp-text-soft); background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 6px; padding: 3px 7px; opacity: 0; pointer-events: none;
+  transition: opacity .15s; box-shadow: var(--cp-shadow);
+}
+.card .ic[data-script]:hover::after, .card .ic[data-script]:focus-visible::after { opacity: 1; }
 
 .tbl-scroll { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 12px; margin-top: 20px; box-shadow: var(--cp-shadow); }
 table { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 13px; background: var(--cp-surface); }
@@ -238,6 +250,22 @@ footer.page a:hover { text-decoration: underline; }
     </div>
   </div>
 
+  <div class="callout info">
+    <div class="ci">🗂️</div>
+    <div>
+      <h4>Example device group naming pattern</h4>
+      <p>Model device groups the same way you would tier any other resource, for example: <code>Tier0-DomainControllers</code>, <code>Tier1-HighValueAssets</code>, <code>Region-East</code> / <code>Region-West</code>, <code>Mission-A</code>, <code>Contractor-Systems</code>. Assign the Security Administrator persona to all device groups, and scope Tier-2/Tier-3 responder personas to only the region or mission groups they own, so a regional analyst never sees devices outside their segment.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="ci">⚠️</div>
+    <div>
+      <h4>Prerequisite: role-assignable groups</h4>
+      <p>Every custom role below is designed to be assigned to an Entra <strong>role-assignable security group</strong>. Creating one requires <strong>Privileged Role Administrator</strong> (or Global Administrator) &mdash; a standard Security Administrator cannot create these groups. <code>isAssignableToRole</code> is set at creation and is <strong>immutable</strong>; it cannot be added to an existing group. Membership type must be <strong>Assigned</strong> (dynamic groups are not permitted), and a role-assignable group cannot be nested inside another one.</p>
+    </div>
+  </div>
+
   <!-- LEGEND -->
   <div class="legend">
     <div class="grp">
@@ -289,11 +317,21 @@ footer.page a:hover { text-decoration: underline; }
   <!-- PERSONAS -->
   <h2><span class="n">2</span>The personas</h2>
   <p class="section-note">Job-shaped roles you actually assign, each expressed as the URBAC permission set it needs plus the device group scope that bounds it. Where a persona configures endpoint policy or drives automation, the Intune role or API permission it additionally requires is noted. Prefer the narrowest permission set and the tightest device group scope that covers the task.</p>
+  <p class="section-note"><strong>Click a persona&rsquo;s icon</strong> to copy a ready-to-run Microsoft Graph PowerShell snippet that provisions the underlying Entra security group for that role. The Defender custom role, its permission grants, and PIM activation settings still have to be finished in the Defender and Entra portals &mdash; there is no general-availability public API for either, so a true one-click &ldquo;Deploy to Azure&rdquo; button cannot fully provision this end to end (see the footer for why).</p>
 
   <div class="cards">
     <div class="card">
       <div class="top">
-        <div class="ic">🛡️</div>
+        <div class="ic" role="button" tabindex="0" data-script='# Requires: Microsoft.Graph.Groups module, and Privileged Role Administrator (or Global Administrator) in Entra ID
+Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-SecAdmin-Full" -MailEnabled:$false -MailNickname "mde-secadmin-full" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next steps (no GA public API for either):
+# 1) Defender portal &gt; Permissions and roles &gt; Roles &gt; Create custom role "MDE-SecAdmin-Full"
+#    Grant all permissions across Security operations, Security posture, and Authorization and settings. Device groups: All devices.
+#    Assignment: add the MDE-SecAdmin-Full group.
+# 2) Entra ID &gt; Identity Governance &gt; PIM &gt; Groups &gt; MDE-SecAdmin-Full
+#    Member setting: MFA required = Yes, Approval required = Yes, Max activation duration = 8 hours, assign as Eligible.' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🛡️</div>
         <div><h3>Security Administrator</h3><div class="role-line">URBAC: full set across all three groups. Entra: Security Administrator grants the equivalent automatically.</div></div>
       </div>
       <p>Owns endpoint defense end to end: response, live response, detection tuning, settings, vulnerability management, and role administration. Restrict to break-glass and elevate through PIM.</p>
@@ -302,7 +340,13 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">👁️</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-Tier1-ReadOnly" -MailEnabled:$false -MailNickname "mde-tier1-readonly" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next step (Defender portal): custom role "MDE-Tier1-ReadOnly"
+#   Permissions: Security data basics (read), Vulnerability management (read)
+#   Device groups: this tiers local/facility groups only
+#   Assignment: add the MDE-Tier1-ReadOnly group' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">👁️</div>
         <div><h3>SOC Analyst · Tier-1 Reader</h3><div class="role-line">URBAC: Security data basics (read) + Vulnerability management (read)</div></div>
       </div>
       <p>Triage tier: views incidents, alerts, device timelines, hunting results, and exposure data, then escalates. Takes no action.</p>
@@ -311,7 +355,12 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🔎</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-Tier2-Responder" -MailEnabled:$false -MailNickname "mde-tier2-responder" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next step (Defender portal): custom role "MDE-Tier2-Responder"
+#   Permissions: Security data basics (read), Alerts (manage), Response (manage), Basic live response (manage)
+#   Device groups: Region- or Mission-scoped groups only' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🔎</div>
         <div><h3>SOC Analyst · Tier-2 Responder</h3><div class="role-line">URBAC: Security data basics (read) + Alerts (manage) + Response (manage) + Basic live response (manage)</div></div>
       </div>
       <p>Contains threats: manages alerts, runs scans, collects investigation packages, isolates devices, restricts app execution, and works a basic live response session.</p>
@@ -320,7 +369,11 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🕵️</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-Tier3-Hunter" -MailEnabled:$false -MailNickname "mde-tier3-hunter" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next step (Defender portal): custom role "MDE-Tier3-Hunter"
+#   Permissions: everything in Tier-2, plus Advanced live response (manage), File collection (manage), Detection tuning (manage)' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🕵️</div>
         <div><h3>SOC Analyst · Tier-3 Threat Hunter</h3><div class="role-line">Adds Advanced live response (manage) + File collection (manage) + Detection tuning (manage)</div></div>
       </div>
       <p>Deep forensic work: runs scripts on devices, uploads tools, pulls full artifacts, and builds custom detections and IoC on top of Tier-2 rights.</p>
@@ -329,7 +382,12 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🧰</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-ConfigAdmin" -MailEnabled:$false -MailNickname "mde-configadmin" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next steps:
+# 1) Defender portal custom role "MDE-ConfigAdmin": Core security settings (manage), Detection tuning (manage), System settings (manage)
+# 2) Intune admin center: assign this group the Endpoint Security Manager role for AV, firewall, EDR, and ASR policy' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🧰</div>
         <div><h3>Endpoint Configuration Administrator</h3><div class="role-line">URBAC: Core security settings (manage) + Detection tuning (manage) + System settings (manage) · Intune: Endpoint Security Manager</div></div>
       </div>
       <p>Onboards devices and manages portal-side settings, indicators, and web content filtering. Antivirus, firewall, EDR, and ASR policies are authored in Intune under Intune RBAC.</p>
@@ -338,7 +396,11 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">📉</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-VulnMgmtAdmin" -MailEnabled:$false -MailNickname "mde-vulnmgmtadmin" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+
+# Manual next step (Defender portal): custom role "MDE-VulnMgmtAdmin"
+#   Permissions: Vulnerability management (read), Remediation/Exception/Application handling (manage), Security baseline assessment (manage)' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">📉</div>
         <div><h3>Vulnerability Management Administrator</h3><div class="role-line">URBAC: Vulnerability management (read) + Remediation / Exception / Application handling (manage) + Security baseline assessment (manage)</div></div>
       </div>
       <p>Drives Defender Vulnerability Management: raises remediation requests, sets exceptions, blocks vulnerable apps, and runs baseline assessments. No live response or alert management.</p>
@@ -347,7 +409,13 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🎫</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
+New-MgGroup -DisplayName "MDE-HelpDesk" -MailEnabled:$false -MailNickname "mde-helpdesk" -SecurityEnabled -GroupTypes @()
+# IsAssignableToRole is optional here unless this group will also be elevated through PIM.
+
+# Manual next step (Defender portal): custom role "MDE-HelpDesk"
+#   Permissions: Security data basics (read)
+#   Device groups: support-tier device groups only' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🎫</div>
         <div><h3>Help Desk / Service Desk</h3><div class="role-line">URBAC: Security data basics (read), scoped to support device groups</div></div>
       </div>
       <p>Tier-1 support: checks device health and status for assigned device groups to work tickets. Takes no security action.</p>
@@ -356,7 +424,15 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🤖</div>
+        <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Application.ReadWrite.All"
+$app = New-MgApplication -DisplayName "MDE-SOAR-Automation"
+New-MgServicePrincipal -AppId $app.AppId
+
+# Manual next steps:
+# 1) Entra ID &gt; App registrations &gt; MDE-SOAR-Automation &gt; API permissions
+#    Add Application permissions on WindowsDefenderATP: only what the playbook needs, e.g. Machine.Isolate, Machine.LiveResponse, Alert.ReadWrite.All
+#    Grant admin consent.
+# 2) Prefer a certificate over a client secret for the client-credentials flow.' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🤖</div>
         <div><h3>Automation / Service Principal</h3><div class="role-line">API: WindowsDefenderATP app permissions (Machine.Isolate, Machine.LiveResponse, Alert.ReadWrite.All). For hunting, use the Microsoft Graph security API.</div></div>
       </div>
       <p>Unattended SIEM, SOAR, or scripted integrations authenticate app-only through an Azure AD app registration. URBAC does not apply; grant only the API permissions the playbook uses.</p>
@@ -365,7 +441,9 @@ footer.page a:hover { text-decoration: underline; }
 
     <div class="card">
       <div class="top">
-        <div class="ic">🔑</div>
+        <div class="ic" role="button" tabindex="0" data-script='# Global Reader and Global Administrator are built-in Entra ID roles, not custom URBAC roles, so there is no group to create.
+# Manual step: Entra ID &gt; Identity Governance &gt; PIM &gt; Microsoft Entra roles
+#   Assign the account as Eligible for Global Reader for day to day use, and reserve Global Administrator for break-glass accounts only.' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🔑</div>
         <div><h3>Global Reader / Global Administrator</h3><div class="role-line">Entra: Global Reader (read-all) · Global Administrator (break-glass)</div></div>
       </div>
       <p>Tenant-wide Entra roles. Global Reader gets read access to endpoint security data and vulnerability management, though not to MDE portal settings. Global Administrator is auto-mapped to the full URBAC permission set across all device groups, which is why it should be break-glass only.</p>
@@ -592,9 +670,29 @@ footer.page a:hover { text-decoration: underline; }
     <li><strong>Advanced live response needs File collection too.</strong> The legacy "advanced" tier maps to both Advanced live response (manage) and File collection (manage) in URBAC. Grant them together, and enable the Live response feature toggle under Advanced features first.</li>
     <li><strong>Keep endpoint policy in Intune RBAC.</strong> Core security settings (manage) covers onboarding and portal settings, not antivirus, firewall, EDR, or ASR policy. Those need an Intune role such as Endpoint Security Manager.</li>
     <li><strong>Elevate high-privilege roles just in time.</strong> Grant Security Administrator and Global Administrator through Microsoft Entra Privileged Identity Management (PIM) as time-boxed, approval-gated activations rather than standing assignments.</li>
+    <li><strong>Recommended PIM activation settings.</strong> For Security Administrator and other high-privilege groups: require MFA on activation, require approval, cap the activation duration at 8 hours, and assign members as Eligible rather than Active so nothing stands elevated by default.</li>
     <li><strong>Keep dedicated break-glass accounts.</strong> Maintain at least two cloud-only emergency-access accounts excluded from Conditional Access, and reserve Global Administrator for them.</li>
     <li><strong>Separate duties and audit.</strong> Split configuration (Core security settings) from response (Response and live response), and monitor changes to indicators, custom detections, roles, and device groups in the unified audit log.</li>
+    <li><strong>Document and review on a cadence.</strong> Record tier assignments, device group structure, and role mappings; train assignees on activation and escalation; and revisit the whole model periodically as personas, device inventory, and business needs change.</li>
   </ul>
+
+  <!-- VALIDATE -->
+  <h2><span class="n">7</span>Validate the rollout</h2>
+  <p class="section-note">Before handing a role to its owner, sign in as a test account in each tier and confirm both what should work and what should correctly fail. A permission that silently does not apply, or a device group boundary that leaks visibility, is much easier to catch here than after go-live.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead><tr><th>Persona</th><th>Should succeed</th><th>Should fail</th></tr></thead>
+    <tbody>
+      <tr><td class="pname">Tier-1 Reader</td><td>View devices, alerts, incidents, and exposure data in assigned device groups</td><td>Isolate a device, run live response, or manage alerts</td></tr>
+      <tr><td class="pname">Tier-2 Responder</td><td>Manage alerts, isolate a device, run a basic live response session</td><td>Run advanced live response (putfile/run scripts), edit detection rules, or see devices outside assigned device groups</td></tr>
+      <tr><td class="pname">Tier-3 Hunter</td><td>Advanced live response, file collection, custom detection rules and IoC</td><td>Manage roles/device groups, or change core or system settings</td></tr>
+      <tr><td class="pname">Endpoint Configuration Administrator</td><td>Onboard devices, manage core security settings and detection tuning</td><td>Isolate devices, run live response, or manage alerts</td></tr>
+      <tr><td class="pname">Vulnerability Management Administrator</td><td>Raise remediation requests, set exceptions, run baseline assessments</td><td>Isolate devices, manage alerts, or change portal settings</td></tr>
+      <tr><td class="pname">Help Desk</td><td>View device status for their support device groups</td><td>View security data or take any response action outside their scope</td></tr>
+      <tr><td class="pname">Security Administrator</td><td>Everything above, across all device groups</td><td>N/A &mdash; confirm PIM activation is time-boxed, approval-gated, and logged</td></tr>
+    </tbody>
+  </table>
+  </div>
 
   <footer class="page">
     Reference model for Microsoft Defender for Endpoint Unified RBAC, plus the Intune and API handoffs. Permission names and scope per Microsoft Learn
@@ -603,8 +701,38 @@ footer.page a:hover { text-decoration: underline; }
     <a href="https://learn.microsoft.com/en-us/defender-endpoint/machine-groups">Create and manage device groups</a>,
     <a href="https://learn.microsoft.com/en-us/intune/device-security/microsoft-defender/security-settings-management">Security settings management</a>),
     as of August 2026. Verify permission names against your tenant, since URBAC rollout and catalog contents change over time.
+    <br><br>
+    <strong>Why no "Deploy to Azure" button:</strong> Entra security groups and Defender Unified RBAC custom roles are not Azure Resource Manager resource types, so a standard ARM deployment link cannot create or configure them. The persona icons above copy a Microsoft Graph PowerShell snippet that provisions the Entra security group for that role under your own signed-in session and permissions; the Defender custom role/permission grant and PIM activation settings still require the manual portal steps noted in each script, since neither has a general-availability public API today.
   </footer>
 
 </div>
+<script>
+function copyPersonaScript(el) {
+  var script = el.getAttribute('data-script');
+  if (!script) { return; }
+  var restore = function () {
+    var original = el.textContent;
+    el.textContent = '\u2705';
+    el.setAttribute('aria-label', 'Setup script copied to clipboard');
+    setTimeout(function () { el.textContent = original; el.removeAttribute('aria-label'); }, 1500);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(script).then(restore).catch(function () { fallbackCopyScript(script, restore); });
+  } else {
+    fallbackCopyScript(script, restore);
+  }
+}
+function fallbackCopyScript(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { alert('Copy failed. The script text is in this icon\u2019s data-script attribute.'); }
+  document.body.removeChild(ta);
+}
+</script>
 </body>
 </html>
