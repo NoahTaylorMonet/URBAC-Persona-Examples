@@ -261,8 +261,8 @@ footer.page a:hover { text-decoration: underline; }
   <div class="callout">
     <div class="ci">⚠️</div>
     <div>
-      <h4>Prerequisite: role-assignable groups</h4>
-      <p>Every custom role below is designed to be assigned to an Entra <strong>role-assignable security group</strong>. Creating one requires <strong>Privileged Role Administrator</strong> (or Global Administrator) &mdash; a standard Security Administrator cannot create these groups. <code>isAssignableToRole</code> is set at creation and is <strong>immutable</strong>; it cannot be added to an existing group. Membership type must be <strong>Assigned</strong> (dynamic groups are not permitted), and a role-assignable group cannot be nested inside another one.</p>
+      <h4>Role-assignable groups: only for Global Reader / Global Administrator</h4>
+      <p><code>isAssignableToRole</code> only matters when a group is assigned an actual <strong>Microsoft Entra directory role</strong> (see the Global Reader / Global Administrator persona below). Creating a role-assignable group requires <strong>Privileged Role Administrator</strong> (or Global Administrator), the flag is set at creation and is <strong>immutable</strong>, membership must be <strong>Assigned</strong> (no dynamic groups), and the group cannot be nested. The other personas on this page are <strong>Defender custom roles</strong> assigned to an ordinary Entra security group from the Defender portal&rsquo;s own Roles page &mdash; that group does not need to be role-assignable, and creating it only requires a role that can create security groups (for example Groups Administrator), plus Authorization (manage) in Defender or Global Administrator to complete the role assignment. Verify this distinction against your tenant before requiring Privileged Role Administrator for a group that does not need it.</p>
     </div>
   </div>
 
@@ -322,14 +322,15 @@ footer.page a:hover { text-decoration: underline; }
   <div class="cards">
     <div class="card">
       <div class="top">
-        <div class="ic" role="button" tabindex="0" data-script='# Requires: Microsoft.Graph.Groups module, and Privileged Role Administrator (or Global Administrator) in Entra ID
+        <div class="ic" role="button" tabindex="0" data-script='# Requires: Microsoft.Graph.Groups module, and a role that can create security groups (e.g. Groups Administrator)
 Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-SecAdmin-Full" -MailEnabled:$false -MailNickname "mde-secadmin-full" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-SecAdmin-Full" -MailEnabled:$false -MailNickname "mde-secadmin-full" -SecurityEnabled -GroupTypes @()
+# This is a Defender custom-role assignment group, not an Entra directory role, so isAssignableToRole is not required here.
 
 # Manual next steps (no GA public API for either):
 # 1) Defender portal &gt; Permissions and roles &gt; Roles &gt; Create custom role "MDE-SecAdmin-Full"
 #    Grant all permissions across Security operations, Security posture, and Authorization and settings. Device groups: All devices.
-#    Assignment: add the MDE-SecAdmin-Full group.
+#    Assignment: add the MDE-SecAdmin-Full group. Completing this step needs Authorization (manage) in Defender or Global Administrator.
 # 2) Entra ID &gt; Identity Governance &gt; PIM &gt; Groups &gt; MDE-SecAdmin-Full
 #    Member setting: MFA required = Yes, Approval required = Yes, Max activation duration = 8 hours, assign as Eligible.' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🛡️</div>
         <div><h3>Security Administrator</h3><div class="role-line">URBAC: full set across all three groups. Entra: Security Administrator grants the equivalent automatically.</div></div>
@@ -341,7 +342,8 @@ New-MgGroup -DisplayName "MDE-SecAdmin-Full" -MailEnabled:$false -MailNickname "
     <div class="card">
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-Tier1-ReadOnly" -MailEnabled:$false -MailNickname "mde-tier1-readonly" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-Tier1-ReadOnly" -MailEnabled:$false -MailNickname "mde-tier1-readonly" -SecurityEnabled -GroupTypes @()
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next step (Defender portal): custom role "MDE-Tier1-ReadOnly"
 #   Permissions: Security data basics (read), Vulnerability management (read)
@@ -356,7 +358,8 @@ New-MgGroup -DisplayName "MDE-Tier1-ReadOnly" -MailEnabled:$false -MailNickname 
     <div class="card">
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-Tier2-Responder" -MailEnabled:$false -MailNickname "mde-tier2-responder" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-Tier2-Responder" -MailEnabled:$false -MailNickname "mde-tier2-responder" -SecurityEnabled -GroupTypes @()
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next step (Defender portal): custom role "MDE-Tier2-Responder"
 #   Permissions: Security data basics (read), Alerts (manage), Response (manage), Basic live response (manage)
@@ -370,7 +373,8 @@ New-MgGroup -DisplayName "MDE-Tier2-Responder" -MailEnabled:$false -MailNickname
     <div class="card">
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-Tier3-Hunter" -MailEnabled:$false -MailNickname "mde-tier3-hunter" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-Tier3-Hunter" -MailEnabled:$false -MailNickname "mde-tier3-hunter" -SecurityEnabled -GroupTypes @()
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next step (Defender portal): custom role "MDE-Tier3-Hunter"
 #   Permissions: everything in Tier-2, plus Advanced live response (manage), File collection (manage), Detection tuning (manage)' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">🕵️</div>
@@ -383,7 +387,8 @@ New-MgGroup -DisplayName "MDE-Tier3-Hunter" -MailEnabled:$false -MailNickname "m
     <div class="card">
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-ConfigAdmin" -MailEnabled:$false -MailNickname "mde-configadmin" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-ConfigAdmin" -MailEnabled:$false -MailNickname "mde-configadmin" -SecurityEnabled -GroupTypes @()
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next steps:
 # 1) Defender portal custom role "MDE-ConfigAdmin": Core security settings (manage), Detection tuning (manage), System settings (manage)
@@ -397,7 +402,8 @@ New-MgGroup -DisplayName "MDE-ConfigAdmin" -MailEnabled:$false -MailNickname "md
     <div class="card">
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
-New-MgGroup -DisplayName "MDE-VulnMgmtAdmin" -MailEnabled:$false -MailNickname "mde-vulnmgmtadmin" -SecurityEnabled -IsAssignableToRole -GroupTypes @()
+New-MgGroup -DisplayName "MDE-VulnMgmtAdmin" -MailEnabled:$false -MailNickname "mde-vulnmgmtadmin" -SecurityEnabled -GroupTypes @()
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next step (Defender portal): custom role "MDE-VulnMgmtAdmin"
 #   Permissions: Vulnerability management (read), Remediation/Exception/Application handling (manage), Security baseline assessment (manage)' onclick="copyPersonaScript(this)" onkeydown="if(event.key==='Enter'||event.key===' '){copyPersonaScript(this);event.preventDefault();}">📉</div>
@@ -411,7 +417,7 @@ New-MgGroup -DisplayName "MDE-VulnMgmtAdmin" -MailEnabled:$false -MailNickname "
       <div class="top">
         <div class="ic" role="button" tabindex="0" data-script='Connect-MgGraph -Scopes "Group.ReadWrite.All"
 New-MgGroup -DisplayName "MDE-HelpDesk" -MailEnabled:$false -MailNickname "mde-helpdesk" -SecurityEnabled -GroupTypes @()
-# IsAssignableToRole is optional here unless this group will also be elevated through PIM.
+# Defender custom-role assignment group; isAssignableToRole is only needed if this group is separately assigned an Entra directory role.
 
 # Manual next step (Defender portal): custom role "MDE-HelpDesk"
 #   Permissions: Security data basics (read)
@@ -689,7 +695,7 @@ New-MgServicePrincipal -AppId $app.AppId
       <tr><td class="pname">Endpoint Configuration Administrator</td><td>Onboard devices, manage core security settings and detection tuning</td><td>Isolate devices, run live response, or manage alerts</td></tr>
       <tr><td class="pname">Vulnerability Management Administrator</td><td>Raise remediation requests, set exceptions, run baseline assessments</td><td>Isolate devices, manage alerts, or change portal settings</td></tr>
       <tr><td class="pname">Help Desk</td><td>View device status for their support device groups</td><td>View security data or take any response action outside their scope</td></tr>
-      <tr><td class="pname">Security Administrator</td><td>Everything above, across all device groups</td><td>N/A &mdash; confirm PIM activation is time-boxed, approval-gated, and logged</td></tr>
+      <tr><td class="pname">Security Administrator</td><td>Everything above, across all device groups, only while the PIM-eligible assignment is actively activated</td><td>Using any capability above with a standing (non-activated) assignment &mdash; the role should sit Eligible, not Active, until activated</td></tr>
     </tbody>
   </table>
   </div>
