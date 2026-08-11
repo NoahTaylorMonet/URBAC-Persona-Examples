@@ -309,7 +309,7 @@ footer.page a:hover { text-decoration: underline; }
         <div class="ic">👁️</div>
         <div><h3>SOC Analyst · Reader</h3><div class="role-line">MDA: Security reader · Entra: Security Reader · URBAC: Security data basics (read)</div></div>
       </div>
-      <p>Views cloud app alerts, the activity log, discovered apps, and advanced hunting over CloudAppEvents and OAuthAppInfo. Read-focused: it can also create MDA API access tokens, but cannot manage alerts, policies, governance, or settings.</p>
+      <p>Views cloud app alerts, the activity log, discovered apps, and advanced hunting over CloudAppEvents and OAuthAppInfo. Read-focused: it cannot manage alerts, policies, governance, or settings. One exception worth calling out&mdash;this role can still generate MDA API access tokens, which is a meaningfully elevated capability for a "reader" persona, since a token can be used outside the portal's session controls. Verify in your tenant whether that token-creation right should instead sit with the Cloud App Security Administrator persona.</p>
       <div class="tags"><span class="src mda">MDA</span><span class="src entra">ENTRA</span><span class="src urbac">URBAC</span></div>
     </div>
 
@@ -336,7 +336,7 @@ footer.page a:hover { text-decoration: underline; }
         <div class="ic">🧩</div>
         <div><h3>App Governance Administrator</h3><div class="role-line">Entra: Global/Company Administrator (full) · Security Administrator (near-full) · Security Reader (read)</div></div>
       </div>
-      <p>Manages OAuth app policies, investigates app permissions, and remediates over-privileged M365 apps. App governance is governed by Entra roles only; URBAC reaches just the OAuthAppInfo hunting table. Only Global/Company Administrator can Update Remediation; Security Administrator does everything else. Cloud App Security Administrator can turn the feature on but cannot view or manage it.</p>
+      <p>Manages OAuth app policies, investigates app permissions, and remediates over-privileged M365 apps. App governance is governed by Entra roles only; URBAC reaches just the OAuthAppInfo hunting table. Only Global/Company Administrator can Update Remediation; Security Administrator does everything else. Cloud App Security Administrator can flip the one-time tenant-wide toggle that turns app governance on, but that role has no further view or manage rights in the app governance experience itself&mdash;viewing and managing policies still needs Security Administrator, Security Reader, or Global/Company Administrator.</p>
       <div class="tags"><span class="src entra">ENTRA</span></div>
     </div>
 
