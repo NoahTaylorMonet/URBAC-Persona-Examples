@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud App Security Personas &amp; Unified RBAC Permissions</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.55;
+  font-size: 15px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+
+header.page { margin-bottom: 8px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cp-accent);
+}
+h1 { font-size: 30px; margin: 6px 0 8px; letter-spacing: -0.01em; }
+.lede { font-size: 16px; color: var(--cp-text-muted); max-width: 880px; margin: 0; }
+
+h2 {
+  font-size: 20px; margin: 46px 0 8px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--cp-border);
+}
+h2 .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px; margin-right: 10px;
+  background: var(--cp-accent); color: var(--cp-accent-fg);
+  font-size: 14px; font-weight: 700; vertical-align: middle;
+}
+.section-note { color: var(--cp-text-muted); font-size: 14px; margin: 6px 0 18px; max-width: 940px; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 12px; padding: 16px 18px; margin: 22px 0 8px;
+}
+.legend .grp { display: flex; flex-direction: column; gap: 8px; }
+.legend .grp-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cp-text-soft); }
+.legend .items { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend .li { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cp-text-muted); }
+
+.lvl {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid transparent;
+}
+.lvl .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lvl.full { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: color-mix(in srgb, var(--cp-accent) 32%, transparent); }
+.lvl.full .dot { background: var(--cp-accent); }
+.lvl.config { background: color-mix(in srgb, var(--cp-success) 12%, transparent); color: var(--cp-success); border-color: color-mix(in srgb, var(--cp-success) 34%, transparent); }
+.lvl.config .dot { background: var(--cp-success); }
+.lvl.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent); }
+.lvl.read .dot { background: var(--cp-warning); }
+.lvl.none { background: var(--cp-surface-soft); color: var(--cp-text-soft); border-color: var(--cp-border); }
+.lvl.none .dot { background: var(--cp-border-strong); }
+
+.src {
+  display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 6px; border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft); color: var(--cp-text-muted); white-space: nowrap;
+}
+.src.entra { border-color: color-mix(in srgb, var(--cp-link) 45%, transparent); color: var(--cp-link); background: color-mix(in srgb, var(--cp-link) 10%, transparent); }
+.src.urbac { border-color: color-mix(in srgb, var(--cp-success) 40%, transparent); color: var(--cp-success); background: color-mix(in srgb, var(--cp-success) 10%, transparent); }
+.src.mda { border-color: color-mix(in srgb, var(--cp-accent) 40%, transparent); color: var(--cp-accent); background: var(--cp-accent-soft); }
+.src.saas { border-color: color-mix(in srgb, var(--cp-warning) 45%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); background: color-mix(in srgb, var(--cp-warning) 12%, transparent); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; margin-top: 20px; }
+.card {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 14px; padding: 16px 17px; box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card .top { display: flex; align-items: flex-start; gap: 11px; }
+.card .ic {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.card h3 { margin: 0; font-size: 15.5px; line-height: 1.25; }
+.card .role-line { font-size: 11.5px; color: var(--cp-text-soft); margin-top: 3px; line-height: 1.4; }
+.card p { margin: 0; font-size: 13px; color: var(--cp-text-muted); }
+.card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 4px; }
+
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 12px; margin-top: 20px; box-shadow: var(--cp-shadow); }
+table { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 13px; background: var(--cp-surface); }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--cp-bg-elevated); color: var(--cp-text);
+  text-align: left; font-size: 12px; font-weight: 700; padding: 12px 12px;
+  border-bottom: 2px solid var(--cp-border-strong); vertical-align: bottom;
+}
+thead th.rowhead { z-index: 3; left: 0; min-width: 214px; }
+tbody th.rowhead {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--cp-bg-elevated); text-align: left; font-weight: 600;
+  padding: 11px 12px; border-bottom: 1px solid var(--cp-border);
+  border-right: 1px solid var(--cp-border); min-width: 214px; vertical-align: top;
+}
+tbody th.rowhead .sub { display: block; font-size: 11px; font-weight: 400; color: var(--cp-text-soft); margin-top: 2px; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--cp-border); vertical-align: top; }
+tbody tr:hover td, tbody tr:hover th.rowhead { background: var(--cp-highlight); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+.cellnote { display: block; font-size: 11px; color: var(--cp-text-soft); margin-top: 4px; line-height: 1.35; }
+
+table.combo { min-width: 1080px; }
+table.combo td.feat { font-weight: 600; color: var(--cp-text); }
+table.combo code, .card code, .notes code, .cellnote code {
+  font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px;
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+  border-radius: 5px; padding: 1px 5px; color: var(--cp-accent);
+}
+.perm { font-weight: 600; color: var(--cp-success); }
+.outscope { color: var(--cp-text-soft); font-style: italic; }
+.pillrow { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.callout {
+  display: flex; gap: 13px; background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-left: 4px solid var(--cp-accent); border-radius: 10px; padding: 15px 17px; margin: 16px 0;
+}
+.callout .ci { font-size: 18px; flex: none; }
+.callout h4 { margin: 0 0 4px; font-size: 14px; }
+.callout p { margin: 0; font-size: 13.5px; color: var(--cp-text-muted); }
+.callout.info { border-left-color: var(--cp-link); }
+.callout.warn { border-left-color: var(--cp-warning); }
+
+.permtable { min-width: 720px; }
+.permtable td.pname { font-weight: 600; }
+.lvlbadge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.lvlbadge.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); }
+.lvlbadge.manage { background: var(--cp-accent-soft); color: var(--cp-accent); }
+
+.notes { margin: 14px 0 0; padding-left: 20px; }
+.notes li { font-size: 13.5px; color: var(--cp-text-muted); margin: 7px 0; }
+
+footer.page {
+  margin-top: 54px; padding-top: 18px; border-top: 1px solid var(--cp-border);
+  font-size: 12.5px; color: var(--cp-text-soft);
+}
+footer.page a { color: var(--cp-link); text-decoration: none; }
+footer.page a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 26px 16px 60px; }
+  h1 { font-size: 25px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Microsoft Defender for Cloud Apps · Unified RBAC (Preview)</div>
+    <h1>Cloud App Security Personas &amp; Unified RBAC Permissions</h1>
+    <p class="lede">Common roles for securing SaaS and cloud apps, mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions alongside the <strong>Defender for Cloud Apps built-in roles</strong>. Unlike Endpoint and Identity, Cloud Apps integration with URBAC is opt-in and still in preview as of August 2026, so both models are in play, and several tasks stay on Entra ID roles or the app connectors entirely.</p>
+  </header>
+
+  <div class="callout">
+    <div class="ci">📄</div>
+    <div>
+      <h4>Guidance only</h4>
+      <p>These personas and permission mappings are illustrative examples, not a configuration baseline. They reflect Microsoft Learn documentation captured on 3 August 2026, they are static, and Microsoft's permission catalog, role names, and RBAC rollout change over time. Verify every permission against your own tenant before you assign it, and treat this page as a starting point rather than an authoritative source.</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="ci">⚠️</div>
+    <div>
+      <h4>Cloud Apps URBAC is preview and opt-in</h4>
+      <p>Defender for Cloud Apps is only partly onboarded to Unified RBAC, and the integration is marked Preview. Endpoint and Identity activate URBAC by default; Cloud Apps does not, an administrator turns it on. Activating URBAC for Cloud Apps <strong>discontinues four scoped roles</strong> (App/instance admin, User group admin, Cloud Discovery global admin, Cloud Discovery report admin) with no URBAC equivalent, and the deactivation path does not document restoring them. App governance stays on Entra ID roles regardless, except the <code>OAuthAppInfo</code> hunting table. Weigh the loss of app-level and group-level scoping before activating.</p>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="grp">
+      <span class="grp-title">Access level</span>
+      <div class="items">
+        <span class="li"><span class="lvl full"><span class="dot"></span>Full / Manage</span></span>
+        <span class="li"><span class="lvl config"><span class="dot"></span>Act / Govern</span></span>
+        <span class="li"><span class="lvl read"><span class="dot"></span>Read-only</span></span>
+        <span class="li"><span class="lvl none"><span class="dot"></span>None</span></span>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-title">Permission model</span>
+      <div class="items">
+        <span class="li"><span class="src urbac">URBAC</span> Defender Unified RBAC (preview)</span>
+        <span class="li"><span class="src mda">MDA</span> Cloud Apps built-in role</span>
+        <span class="li"><span class="src entra">ENTRA</span> Microsoft Entra ID role</span>
+        <span class="li"><span class="src saas">SAAS</span> Connector / target app permission</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- URBAC PERMISSION REFERENCE -->
+  <h2><span class="n">1</span>The Unified RBAC permissions in play</h2>
+  <p class="section-note">When URBAC is activated for Cloud Apps, these permissions govern the workload. They apply portal-wide, not with a Cloud Apps qualifier, and the official mapping table pins each built-in role to a permission set (shown below).</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead>
+      <tr><th>URBAC permission</th><th>Level</th><th>What it enables for cloud apps</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="pname">Security data basics</td><td><span class="lvlbadge read">Read</span></td><td>View cloud app incidents, alerts, the activity log, discovered apps, and advanced hunting over the CloudAppEvents and OAuthAppInfo tables. The baseline read for all Cloud Apps data.</td></tr>
+      <tr><td class="pname">Alerts</td><td><span class="lvlbadge manage">Manage</span></td><td>Classify, assign, resolve, and suppress Cloud Apps alerts; trigger automated investigations.</td></tr>
+      <tr><td class="pname">Response</td><td><span class="lvlbadge manage">Manage</span></td><td>Approve or dismiss pending remediation. For Cloud Apps this maps to governance actions such as suspending a user or making a file private through the unified response plane.</td></tr>
+      <tr><td class="pname">Exposure Management</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or act on Secure Score recommendations that include SaaS hardening and OAuth app risk signals. There is no standalone SaaS posture permission in the catalog.</td></tr>
+      <tr><td class="pname">Core security settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or manage Cloud Apps security settings, including policy enforcement, SIEM agent configuration, and security extensions.</td></tr>
+      <tr><td class="pname">Detection tuning</td><td><span class="lvlbadge manage">Manage</span></td><td>Custom detections, alert tuning, and anomaly detection policy tuning.</td></tr>
+      <tr><td class="pname">System settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>General Cloud Apps settings, Cloud Discovery configuration, log collector setup, snapshot reports, and user enrichment.</td></tr>
+      <tr><td class="pname">Authorization</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or manage custom URBAC roles and scoped admin access from Permissions &gt; Cloud Apps &gt; Roles.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🗺️</div>
+    <div>
+      <h4>How the built-in roles map to URBAC</h4>
+      <p>On activation, the four non-scoped built-in roles translate to permission sets. <strong>Local Global administrator</strong> gets Security data basics (read), Alerts (manage), and all of Authorization, Security settings, and System settings. <strong>Local Security operator</strong> gets read plus Alerts (manage), Security settings (all), and read on Authorization and System settings. <strong>Local Security reader</strong> gets read plus read on Authorization, Security settings, and System settings. The scoped roles have no mapping and are dropped.</p>
+    </div>
+  </div>
+
+  <!-- PERSONAS -->
+  <h2><span class="n">2</span>The personas</h2>
+  <p class="section-note">Job-shaped roles you actually assign, expressed against both models: the URBAC permission set once activated, and the Cloud Apps built-in or Entra role that works today. Watch the governance-action gap: the Security Operator built-in role manages alerts but cannot suspend a user or make a file private.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="top">
+        <div class="ic">🛡️</div>
+        <div><h3>Cloud App Security Administrator</h3><div class="role-line">MDA: Global administrator · Entra: Security Administrator or Cloud App Security Administrator</div></div>
+      </div>
+      <p>Owns connectors, policies, settings, governance configuration, and scoped admin management. URBAC once activated: read plus Alerts, Authorization, Core security settings, Detection tuning, and System settings (manage).</p>
+      <div class="tags"><span class="src mda">MDA</span><span class="src entra">ENTRA</span><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">👁️</div>
+        <div><h3>SOC Analyst · Reader</h3><div class="role-line">MDA: Security reader · Entra: Security Reader · URBAC: Security data basics (read)</div></div>
+      </div>
+      <p>Views cloud app alerts, the activity log, discovered apps, and advanced hunting over CloudAppEvents and OAuthAppInfo. Read-focused: it can also create MDA API access tokens, but cannot manage alerts, policies, governance, or settings.</p>
+      <div class="tags"><span class="src mda">MDA</span><span class="src entra">ENTRA</span><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔎</div>
+        <div><h3>SOC Analyst · Responder</h3><div class="role-line">Entra: Security Administrator for governance actions · URBAC: read + Alerts + Response (manage)</div></div>
+      </div>
+      <p>Manages alerts and takes governance actions. The Security Operator built-in role only reaches alert management; suspending users or making files private needs Security Administrator or Global administrator.</p>
+      <div class="tags"><span class="src entra">ENTRA</span><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🌐</div>
+        <div><h3>Cloud Discovery Analyst</h3><div class="role-line">MDA: Cloud Discovery report admin (pre-URBAC, scoped) · post-URBAC: read + System settings</div></div>
+      </div>
+      <p>Reads shadow-IT reports, tags and sanctions apps, and analyzes discovery data. The scoped report role gives tight least-privilege today; activating URBAC drops it and widens the minimum to Security data basics.</p>
+      <div class="tags"><span class="src mda">MDA</span><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🧩</div>
+        <div><h3>App Governance Administrator</h3><div class="role-line">Entra: Global/Company Administrator (full) · Security Administrator (near-full) · Security Reader (read)</div></div>
+      </div>
+      <p>Manages OAuth app policies, investigates app permissions, and remediates over-privileged M365 apps. App governance is governed by Entra roles only; URBAC reaches just the OAuthAppInfo hunting table. Only Global/Company Administrator can Update Remediation; Security Administrator does everything else. Cloud App Security Administrator can turn the feature on but cannot view or manage it.</p>
+      <div class="tags"><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔀</div>
+        <div><h3>Conditional Access App Control Admin</h3><div class="role-line">Entra: Conditional Access Administrator + Security Administrator</div></div>
+      </div>
+      <p>Builds MDA session and access policies. The proxy only engages when an Entra Conditional Access policy routes traffic to it, so two grants are always needed: the CA policy in Entra and the session policy in MDA.</p>
+      <div class="tags"><span class="src entra">ENTRA</span><span class="src mda">MDA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">⚖️</div>
+        <div><h3>Compliance / DLP Reviewer</h3><div class="role-line">MDA: Compliance administrator · Entra: Compliance Administrator</div></div>
+      </div>
+      <p>Manages file policies and DLP detections, reviews quarantine, and allows or blocks file governance actions. Cannot create activity, OAuth, or anomaly policies, or configure connectors.</p>
+      <div class="tags"><span class="src mda">MDA</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🎫</div>
+        <div><h3>Help Desk / Service Desk</h3><div class="role-line">MDA: User group admin or App/instance admin (pre-URBAC, scoped) · Entra: Security Reader</div></div>
+      </div>
+      <p>Views activity for specific users or apps to work tickets. The scoped built-in roles limit visibility to just the relevant users or apps; that scoping is lost once URBAC is activated.</p>
+      <div class="tags"><span class="src mda">MDA</span><span class="src entra">ENTRA</span></div>
+    </div>
+  </div>
+
+  <!-- MATRIX -->
+  <h2><span class="n">3</span>Permission matrix: persona &times; task</h2>
+  <p class="section-note">Each cell shows the access level and the model that grants it. Governance-action rows are where least privilege gets hard: the built-in Security Operator role stops at alert management, so acting on a user or file needs Security Administrator. App governance and Conditional Access App Control carry <span class="src entra">ENTRA</span> notes because they sit outside the Cloud Apps roles.</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="rowhead">Task / capability</th>
+        <th>Cloud Apps<br>Admin</th>
+        <th>SOC<br>Reader</th>
+        <th>SOC<br>Responder</th>
+        <th>Discovery<br>Analyst</th>
+        <th>Compliance<br>Reviewer</th>
+        <th>App Gov<br>Admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">View alerts, activity log &amp; discovered apps<span class="sub">Unified portal</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View*</span><span class="cellnote">*Discovery data only (scoped)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Advanced hunting (CloudAppEvents, OAuthAppInfo)<span class="sub">KQL</span></th>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">OAuthAppInfo table</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Manage / classify alerts<span class="sub">Dismiss, assign, resolve</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Create / edit activity &amp; anomaly policies<span class="sub">Also OAuth policies</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings + Detection tuning</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">needs Security Admin</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Create / edit file policies &amp; DLP<span class="sub">File governance</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote"><span class="src mda">MDA</span> Compliance administrator</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Governance action: suspend user, make file private<span class="sub">Revoke OAuth, remove collaborator</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Govern</span><span class="cellnote">Response (manage) · <span class="src saas">SAAS</span> connector</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Govern*</span><span class="cellnote">*Security Admin, not Operator</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>File only</span><span class="cellnote">file governance actions</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Cloud Discovery reports, app sanctioning<span class="sub">Tag, sanction, unsanction</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">System settings + Core security settings</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage*</span><span class="cellnote">*<span class="src mda">MDA</span> Discovery admin (pre-URBAC)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Configure app connectors (API connectors)<span class="sub">Salesforce, AWS, GWS…</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">System settings · plus <span class="src saas">SAAS</span> admin</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Conditional Access App Control<span class="sub">Session / access policies</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings + <span class="src entra">ENTRA</span> CA Admin</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">App governance (OAuth app policies)<span class="sub">M365 apps</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Manage*</span><span class="cellnote"><span class="src entra">ENTRA</span> Security Administrator (excl. Update Remediation)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote"><span class="src entra">ENTRA</span> Security Reader</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage*</span><span class="cellnote"><span class="src entra">ENTRA</span> Security Operator (excl. Update Remediation)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage*</span><span class="cellnote"><span class="src entra">ENTRA</span> Compliance Administrator (excl. Update Remediation)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Full</span><span class="cellnote"><span class="src entra">ENTRA</span> Global Admin; Security Admin excl. Update Remediation</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note" style="margin-top:12px">The Conditional Access App Control and Help Desk personas are omitted from the columns for width. The CA App Control admin needs an Entra Conditional Access Administrator role for the routing policy plus MDA rights for the session policy; Help Desk reads its scoped users or apps only, and that scoping disappears once URBAC is activated.</p>
+
+  <!-- COMBINED SECTION -->
+  <h2><span class="n">4</span>Where URBAC, built-in roles, and Entra combine</h2>
+  <p class="section-note">Cloud Apps runs three permission models at once. Several capabilities are configured under URBAC or a built-in role, but the action only works with a matching Entra role or a connector permission on the SaaS side. Plan every layer, since a portal permission alone often is not enough.</p>
+
+  <div class="tbl-scroll">
+  <table class="combo">
+    <thead>
+      <tr>
+        <th class="rowhead">Capability</th>
+        <th>Portal permission (URBAC or built-in)</th>
+        <th>The catch</th>
+        <th>Additional model required</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">Governance actions (suspend user, make private)</th>
+        <td><span class="perm">Response</span> (manage), or built-in Global / Security administrator</td>
+        <td>Security Operator manages alerts but cannot govern; action runs through the connector</td>
+        <td><span class="src saas">SAAS</span> connector credentials with write scope in the target app</td>
+      </tr>
+      <tr>
+        <th class="rowhead">App governance (OAuth apps)</th>
+        <td><span class="outscope">Not controlled by URBAC</span></td>
+        <td>Portal experiences are Entra-only; URBAC reaches just OAuthAppInfo hunting</td>
+        <td><span class="src entra">ENTRA</span> Security Admin, Security Reader, Compliance Admin, etc.</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Conditional Access App Control</th>
+        <td><span class="perm">Core security settings</span> (manage) for the session policy</td>
+        <td>Sessions only route to the proxy when an Entra CA policy sends them</td>
+        <td><span class="src entra">ENTRA</span> Conditional Access Administrator</td>
+      </tr>
+      <tr>
+        <th class="rowhead">App connectors (API connectors)</th>
+        <td><span class="perm">System settings</span> (manage), or built-in Security administrator</td>
+        <td>Portal config triggers the wizard; consent must come from the SaaS side</td>
+        <td><span class="src saas">SAAS</span> admin in the target app (Salesforce, AWS, GWS…)</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Cloud Discovery log collector</th>
+        <td><span class="perm">System settings</span> (manage) to configure the log source</td>
+        <td>The collector is a Docker container on the customer network</td>
+        <td><span class="src saas">SAAS</span> server or VM access to host the collector</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Information Protection labeling</th>
+        <td>Compliance / Security administrator for file policy</td>
+        <td>Enabling the integration is a one-time tenant consent</td>
+        <td><span class="src entra">ENTRA</span> Application Administrator or Cloud Application Administrator</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🔐</div>
+    <div>
+      <h4>A governance action can be authorized and still fail</h4>
+      <p>Suppose an operator with Response (manage) triggers "suspend user in Salesforce." The Defender portal authorizes the click, then calls the Salesforce API using the connector's credentials. If that connector was set up with read-only rights, the suspend fails no matter how much portal permission the operator holds. Governance effectiveness depends on the connector's granted scope in the target app, which is decided during connector setup by a SaaS admin, not by MDA RBAC.</p>
+    </div>
+  </div>
+
+  <!-- OUT OF SCOPE -->
+  <h2><span class="n">5</span>Explicitly outside Unified RBAC</h2>
+  <p class="section-note">These Cloud Apps areas are governed by a model other than URBAC. Assign the alternative instead of expecting a Defender portal permission to cover them.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead><tr><th>Capability</th><th>Permission model</th></tr></thead>
+    <tbody>
+      <tr><td class="pname">App governance portal (OAuth app policies, alerts, remediation)</td><td><span class="src entra">ENTRA</span> Microsoft Entra ID roles only</td></tr>
+      <tr><td class="pname">App-scoped &amp; user-group-scoped admin (least-privilege delegation)</td><td><span class="src mda">MDA</span> Scoped built-in roles, discontinued once URBAC is activated</td></tr>
+      <tr><td class="pname">Conditional Access App Control routing</td><td><span class="src entra">ENTRA</span> Conditional Access Administrator</td></tr>
+      <tr><td class="pname">App connector consent in the target SaaS app</td><td><span class="src saas">SAAS</span> Admin in Salesforce, AWS, Google Workspace, etc.</td></tr>
+      <tr><td class="pname">Governance action execution in the connected app</td><td><span class="src saas">SAAS</span> Connector credentials and their granted scope</td></tr>
+      <tr><td class="pname">Log collector deployment (Docker host)</td><td><span class="src saas">SAAS</span> Server or VM administration on the customer network</td></tr>
+      <tr><td class="pname">Information Protection enablement</td><td><span class="src entra">ENTRA</span> Application Administrator or Cloud Application Administrator</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- NOTES -->
+  <h2><span class="n">6</span>Best-practice notes</h2>
+  <ul class="notes">
+    <li><strong>Decide on URBAC activation deliberately.</strong> Cloud Apps URBAC is opt-in and preview. Activating it discontinues the App/instance, User group, and Cloud Discovery scoped roles with no equivalent, so confirm no delegation relies on them first.</li>
+    <li><strong>Mind the governance-action gap.</strong> The Security Operator built-in role manages alerts but cannot suspend a user or make a file private. Acting on users or non-file objects needs Security Administrator or Global administrator, which is the sharpest least-privilege limitation in Cloud Apps.</li>
+    <li><strong>App governance is Entra-only.</strong> Assign Entra roles for OAuth app policies and remediation. URBAC touches app governance only through the OAuthAppInfo hunting table.</li>
+    <li><strong>Conditional Access App Control needs two grants.</strong> The session policy lives in MDA, but traffic only reaches the proxy through an Entra Conditional Access policy. Grant Conditional Access Administrator alongside the MDA role.</li>
+    <li><strong>Portal permission does not equal connector permission.</strong> A governance action is only as capable as the connector behind it. If a suspend or unshare fails, check the connector's granted scope in the target SaaS app before adjusting RBAC.</li>
+    <li><strong>Use Compliance Administrator for file work.</strong> File policies, DLP, and file governance actions are covered by the Compliance administrator role, without granting the broader activity and OAuth policy rights of a Security Administrator.</li>
+    <li><strong>Elevate high-privilege roles just in time.</strong> Grant Security Administrator, Cloud App Security Administrator, and Global Administrator through Microsoft Entra Privileged Identity Management (PIM) as time-boxed, approval-gated activations.</li>
+    <li><strong>Keep dedicated break-glass accounts.</strong> Maintain at least two cloud-only emergency-access accounts excluded from Conditional Access, and reserve Global Administrator for them.</li>
+    <li><strong>Separate duties and audit.</strong> Split policy configuration (Core security settings) from governance actions (Response), and monitor changes to connectors, policies, scoped admins, and the governance log in the audit trail.</li>
+  </ul>
+
+  <footer class="page">
+    Reference model for Microsoft Defender for Cloud Apps built-in roles and Unified RBAC (Preview), with the Entra and connector handoffs. Permission and role names per Microsoft Learn
+    (<a href="https://learn.microsoft.com/en-us/defender-cloud-apps/manage-admins">Manage admin access</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-xdr/compare-rbac-roles">Map Defender unified RBAC permissions</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-get-started">App governance</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-cloud-apps/conditional-access-app-control-how-to-overview">Conditional Access App Control</a>),
+    as of August 2026. Verify role names against your tenant, since URBAC rollout for Cloud Apps is in preview and changes over time.
+  </footer>
+
+</div>
+</body>
+</html>

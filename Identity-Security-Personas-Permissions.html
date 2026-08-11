@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Identity Security Personas &amp; Unified RBAC Permissions</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.55;
+  font-size: 15px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+
+header.page { margin-bottom: 8px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cp-accent);
+}
+h1 { font-size: 30px; margin: 6px 0 8px; letter-spacing: -0.01em; }
+.lede { font-size: 16px; color: var(--cp-text-muted); max-width: 880px; margin: 0; }
+
+h2 {
+  font-size: 20px; margin: 46px 0 8px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--cp-border);
+}
+h2 .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px; margin-right: 10px;
+  background: var(--cp-accent); color: var(--cp-accent-fg);
+  font-size: 14px; font-weight: 700; vertical-align: middle;
+}
+.section-note { color: var(--cp-text-muted); font-size: 14px; margin: 6px 0 18px; max-width: 940px; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 12px; padding: 16px 18px; margin: 22px 0 8px;
+}
+.legend .grp { display: flex; flex-direction: column; gap: 8px; }
+.legend .grp-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cp-text-soft); }
+.legend .items { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend .li { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cp-text-muted); }
+
+.lvl {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid transparent;
+}
+.lvl .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lvl.full { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: color-mix(in srgb, var(--cp-accent) 32%, transparent); }
+.lvl.full .dot { background: var(--cp-accent); }
+.lvl.config { background: color-mix(in srgb, var(--cp-success) 12%, transparent); color: var(--cp-success); border-color: color-mix(in srgb, var(--cp-success) 34%, transparent); }
+.lvl.config .dot { background: var(--cp-success); }
+.lvl.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent); }
+.lvl.read .dot { background: var(--cp-warning); }
+.lvl.none { background: var(--cp-surface-soft); color: var(--cp-text-soft); border-color: var(--cp-border); }
+.lvl.none .dot { background: var(--cp-border-strong); }
+
+.src {
+  display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 6px; border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft); color: var(--cp-text-muted); white-space: nowrap;
+}
+.src.entra { border-color: color-mix(in srgb, var(--cp-link) 45%, transparent); color: var(--cp-link); background: color-mix(in srgb, var(--cp-link) 10%, transparent); }
+.src.urbac { border-color: color-mix(in srgb, var(--cp-success) 40%, transparent); color: var(--cp-success); background: color-mix(in srgb, var(--cp-success) 10%, transparent); }
+.src.ad { border-color: color-mix(in srgb, var(--cp-warning) 45%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); background: color-mix(in srgb, var(--cp-warning) 12%, transparent); }
+.src.legacy { border-color: color-mix(in srgb, var(--cp-accent) 40%, transparent); color: var(--cp-accent); background: var(--cp-accent-soft); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; margin-top: 20px; }
+.card {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 14px; padding: 16px 17px; box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card .top { display: flex; align-items: flex-start; gap: 11px; }
+.card .ic {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.card h3 { margin: 0; font-size: 15.5px; line-height: 1.25; }
+.card .role-line { font-size: 11.5px; color: var(--cp-text-soft); margin-top: 3px; line-height: 1.4; }
+.card p { margin: 0; font-size: 13px; color: var(--cp-text-muted); }
+.card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 4px; }
+
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 12px; margin-top: 20px; box-shadow: var(--cp-shadow); }
+table { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 13px; background: var(--cp-surface); }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--cp-bg-elevated); color: var(--cp-text);
+  text-align: left; font-size: 12px; font-weight: 700; padding: 12px 12px;
+  border-bottom: 2px solid var(--cp-border-strong); vertical-align: bottom;
+}
+thead th.rowhead { z-index: 3; left: 0; min-width: 214px; }
+tbody th.rowhead {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--cp-bg-elevated); text-align: left; font-weight: 600;
+  padding: 11px 12px; border-bottom: 1px solid var(--cp-border);
+  border-right: 1px solid var(--cp-border); min-width: 214px; vertical-align: top;
+}
+tbody th.rowhead .sub { display: block; font-size: 11px; font-weight: 400; color: var(--cp-text-soft); margin-top: 2px; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--cp-border); vertical-align: top; }
+tbody tr:hover td, tbody tr:hover th.rowhead { background: var(--cp-highlight); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+.cellnote { display: block; font-size: 11px; color: var(--cp-text-soft); margin-top: 4px; line-height: 1.35; }
+
+table.combo { min-width: 1080px; }
+table.combo td.feat { font-weight: 600; color: var(--cp-text); }
+table.combo code, .card code, .notes code, .cellnote code {
+  font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px;
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+  border-radius: 5px; padding: 1px 5px; color: var(--cp-accent);
+}
+.perm { font-weight: 600; color: var(--cp-success); }
+.outscope { color: var(--cp-text-soft); font-style: italic; }
+.pillrow { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.callout {
+  display: flex; gap: 13px; background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-left: 4px solid var(--cp-accent); border-radius: 10px; padding: 15px 17px; margin: 16px 0;
+}
+.callout .ci { font-size: 18px; flex: none; }
+.callout h4 { margin: 0 0 4px; font-size: 14px; }
+.callout p { margin: 0; font-size: 13.5px; color: var(--cp-text-muted); }
+.callout.info { border-left-color: var(--cp-link); }
+
+.permtable { min-width: 720px; }
+.permtable td.pname { font-weight: 600; }
+.lvlbadge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.lvlbadge.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); }
+.lvlbadge.manage { background: var(--cp-accent-soft); color: var(--cp-accent); }
+
+.notes { margin: 14px 0 0; padding-left: 20px; }
+.notes li { font-size: 13.5px; color: var(--cp-text-muted); margin: 7px 0; }
+
+footer.page {
+  margin-top: 54px; padding-top: 18px; border-top: 1px solid var(--cp-border);
+  font-size: 12.5px; color: var(--cp-text-soft);
+}
+footer.page a { color: var(--cp-link); text-decoration: none; }
+footer.page a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 26px 16px 60px; }
+  h1 { font-size: 25px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Microsoft Defender for Identity · Unified RBAC</div>
+    <h1>Identity Security Personas &amp; Unified RBAC Permissions</h1>
+    <p class="lede">Common roles for identity threat detection and response (ITDR), mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions. URBAC is the only model for Defender for Identity tenants onboarded since March 2025. Response actions add a second layer: the portal permission authorizes the click, and a service account in Active Directory or Entra ID performs the change.</p>
+  </header>
+
+  <div class="callout">
+    <div class="ci">📄</div>
+    <div>
+      <h4>Guidance only</h4>
+      <p>These personas and permission mappings are illustrative examples, not a configuration baseline. They reflect Microsoft Learn documentation captured on 3 August 2026, they are static, and Microsoft's permission catalog, role names, and RBAC rollout change over time. Verify every permission against your own tenant before you assign it, and treat this page as a starting point rather than an authoritative source.</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="ci">📌</div>
+    <div>
+      <h4>Two layers authorize every response action</h4>
+      <p>The <code>Response (manage)</code> URBAC permission lets a user submit Disable user, Force password reset, or Revoke session in the Defender portal. The change itself is executed by a separate identity account: the domain controller's LocalSystem account by default in Active Directory (v3.x sensors always use LocalSystem; v2.x can optionally use a dedicated gMSA action account), and a Microsoft-managed enterprise application in Entra ID. Portal RBAC and the action account are configured and audited independently.</p>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="grp">
+      <span class="grp-title">Access level</span>
+      <div class="items">
+        <span class="li"><span class="lvl full"><span class="dot"></span>Full / Manage</span></span>
+        <span class="li"><span class="lvl config"><span class="dot"></span>Act / Respond</span></span>
+        <span class="li"><span class="lvl read"><span class="dot"></span>Read-only</span></span>
+        <span class="li"><span class="lvl none"><span class="dot"></span>None</span></span>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-title">Permission model</span>
+      <div class="items">
+        <span class="li"><span class="src urbac">URBAC</span> Defender Unified RBAC permission</span>
+        <span class="li"><span class="src entra">ENTRA</span> Microsoft Entra ID role</span>
+        <span class="li"><span class="src ad">AD ACCT</span> Action account / gMSA in AD</span>
+        <span class="li"><span class="src legacy">LEGACY</span> Pre-2025 MDI security group</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- URBAC PERMISSION REFERENCE -->
+  <h2><span class="n">1</span>The Unified RBAC permissions in play</h2>
+  <p class="section-note">Every identity task in the Defender portal maps to one of these URBAC permissions across three groups: Security operations, Security posture, and Authorization and settings. Build custom roles from the specific permissions a persona needs, and scope data access to particular AD domains or OUs where required.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead>
+      <tr><th>URBAC permission</th><th>Level</th><th>What it enables for identity</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="pname">Security data basics</td><td><span class="lvlbadge read">Read</span></td><td>View identity alerts, incidents, entity pages, the identity inventory, and advanced hunting over the IdentityInfo, IdentityLogonEvents, IdentityDirectoryEvents, and IdentityQueryEvents tables. The minimum for any MDI portal access.</td></tr>
+      <tr><td class="pname">Alerts</td><td><span class="lvlbadge manage">Manage</span></td><td>Create, classify, assign, close, reopen, suppress, and exclude MDI alerts and activities.</td></tr>
+      <tr><td class="pname">Response</td><td><span class="lvlbadge manage">Manage</span></td><td>Gate for MDI response actions: authorizes Disable user, Enable user, Force password reset, Revoke session, and Mark as compromised in the portal. Execution runs through the action account, not the portal user.</td></tr>
+      <tr><td class="pname">Exposure Management</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or act on identity security posture (ISPM) recommendations in Microsoft Secure Score: AD misconfigurations, legacy components, certificate risks, and risky accounts.</td></tr>
+      <tr><td class="pname">Core security settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or manage MDI configuration: sensor health, notifications, sensitive and honeytoken entity tags, and the Directory Service Account setup.</td></tr>
+      <tr><td class="pname">Detection tuning</td><td><span class="lvlbadge manage">Manage</span></td><td>Custom detection rules, alert tuning, exclusions, and threat indicators of compromise for identity detections.</td></tr>
+      <tr><td class="pname">System settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>Sensor management (download package, regenerate access key, delete sensor), data sources, and SIEM, VPN, and Defender for Endpoint integration.</td></tr>
+      <tr><td class="pname">Authorization</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or manage custom URBAC roles and assignments, including MDI-scoped roles, without needing Entra Security Administrator.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🗺️</div>
+    <div>
+      <h4>How the legacy groups map to URBAC</h4>
+      <p>Tenants onboarded before March 2025 used three per-workspace security groups, named with an <strong>Azure ATP <em>(workspace name)</em></strong> prefix. <span class="src legacy">LEGACY</span> <strong>Azure ATP Administrators</strong> maps to Security data basics (read) plus Alerts (manage) plus Authorization (read and manage), Security settings (all permissions), and System settings (read and manage). <strong>Azure ATP Users</strong> maps to Security data basics (read) plus Alerts (manage) plus Security settings (all permissions) plus System settings (read). <strong>Azure ATP Viewers</strong> maps to Security data basics (read) plus Core security settings (read) plus System settings (read).</p>
+    </div>
+  </div>
+
+  <!-- PERSONAS -->
+  <h2><span class="n">2</span>The personas</h2>
+  <p class="section-note">Job-shaped roles you actually assign, each expressed as the URBAC permission set it needs. Where a persona runs response actions or deploys sensors, the Entra role or on-premises AD right it additionally requires is noted. Prefer the narrowest permission set, and scope by AD domain or OU where a team owns only part of the estate.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="top">
+        <div class="ic">🛡️</div>
+        <div><h3>Identity Security Administrator</h3><div class="role-line">URBAC: full set across all three groups. Entra: Security Administrator grants the equivalent.</div></div>
+      </div>
+      <p>Owns MDI end to end: sensor health, configuration, detection tuning, posture, and role administration. Equivalent to the legacy Administrators group plus RBAC management.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">👁️</div>
+        <div><h3>SOC Analyst · Tier-1 Reader</h3><div class="role-line">URBAC: Security data basics (read)</div></div>
+      </div>
+      <p>Triage tier: views identity alerts, entity pages, the identity inventory, and advanced hunting. A single read permission covers it. Takes no action.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔎</div>
+        <div><h3>SOC Analyst · Responder</h3><div class="role-line">URBAC: Security data basics (read) + Alerts (manage) + Response (manage)</div></div>
+      </div>
+      <p>Tier-2/3 response: manages alerts and runs Disable user, Force password reset, and Revoke session. Entra-targeted actions also need an Entra role such as SOC Identity Responder.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🕵️</div>
+        <div><h3>Threat Hunter</h3><div class="role-line">URBAC: Security data basics (read)</div></div>
+      </div>
+      <p>Proactive hunting across the four Identity tables. Advanced hunting is included in the base read permission; scoped roles limit results to the assigned domains or OUs.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">📊</div>
+        <div><h3>Identity Posture Administrator</h3><div class="role-line">URBAC: Security data basics (read) + Exposure Management (read / manage)</div></div>
+      </div>
+      <p>Reviews and acts on ISPM recommendations in Secure Score. Note that MDI scoped assignments hide the Exposure Management section, so this persona needs an unscoped role.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">📡</div>
+        <div><h3>Sensor / Deployment Administrator</h3><div class="role-line">URBAC: System settings (read / manage) · plus local admin on each server</div></div>
+      </div>
+      <p>Downloads the sensor package and regenerates access keys from the portal. Installing the sensor on a domain controller, AD FS, AD CS, or Entra Connect server needs local administrator rights on that server, outside URBAC.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src ad">AD ACCT</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🎫</div>
+        <div><h3>Help Desk / Service Desk</h3><div class="role-line">URBAC: Security data basics (read) + Response (manage) · Entra: Helpdesk Administrator</div></div>
+      </div>
+      <p>Resets passwords and revokes sessions for standard users. The Entra Helpdesk Administrator role covers Entra-targeted actions; it cannot disable users or mark accounts compromised.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔑</div>
+        <div><h3>Global Reader / Global Administrator</h3><div class="role-line">Entra: Global Reader (read-all) · Global Administrator (break-glass)</div></div>
+      </div>
+      <p>Tenant-wide Entra roles. Global Reader gets the same read-only MDI access as Security Reader; Global Administrator can onboard MDI and do anything, which is why it should be break-glass only.</p>
+      <div class="tags"><span class="src entra">ENTRA</span></div>
+    </div>
+  </div>
+
+  <!-- MATRIX -->
+  <h2><span class="n">3</span>Permission matrix: persona &times; task</h2>
+  <p class="section-note">Each cell shows the access level and the URBAC permission that grants it. Response-action rows carry an <span class="src ad">AD ACCT</span> or <span class="src entra">ENTRA</span> note: the portal permission authorizes the request, and the action account or Entra role carries it out. Scoped roles further limit which domains and OUs a persona sees.</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="rowhead">Task / capability</th>
+        <th>Identity<br>Admin</th>
+        <th>Tier-1<br>Reader</th>
+        <th>SOC<br>Responder</th>
+        <th>Threat<br>Hunter</th>
+        <th>Posture<br>Admin</th>
+        <th>Sensor<br>Admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">View identity alerts &amp; incidents<span class="sub">Scoped by domain / OU</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">View identity inventory &amp; entity pages<span class="sub">Assets &gt; Identities</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Advanced hunting over Identity tables<span class="sub">IdentityInfo, IdentityLogonEvents…</span></th>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Manage / classify / close alerts<span class="sub">Suppress, exclude, reopen</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Response: Disable user in AD<span class="sub">Executed by action account</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) · <span class="src ad">AD ACCT</span></span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) · <span class="src ad">AD ACCT</span></span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Response: Force password reset<span class="sub">AD or Entra ID</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) · <span class="src ad">AD ACCT</span> or <span class="src entra">ENTRA</span> role for Entra ID</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) · <span class="src ad">AD ACCT</span> or <span class="src entra">ENTRA</span> role for Entra ID</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Response: Disable / Revoke in Entra ID<span class="sub">Mark as compromised</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) + <span class="src entra">ENTRA</span> role</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage) + <span class="src entra">ENTRA</span> SOC Identity Responder</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Sensitive / honeytoken tags, exclusions<span class="sub">Entity configuration</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Configure MDI settings &amp; sensors<span class="sub">Health, notifications, data sources</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">System settings (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">System settings (manage)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Review ISPM posture (Secure Score)<span class="sub">Hidden from scoped roles</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Exposure Management (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Exposure Management (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Install sensor on a DC / AD FS server<span class="sub">On-box installation</span></th>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">needs <span class="src ad">AD ACCT</span> local admin</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Install*</span><span class="cellnote">*local admin on the server</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note" style="margin-top:12px">Help Desk and the Global roles are omitted from the columns for width. Help Desk runs Force password reset and Revoke session for standard users through Response (manage) plus an Entra role; Global Reader reads every row and Global Administrator can onboard MDI and do all of them.</p>
+
+  <!-- COMBINED SECTION -->
+  <h2><span class="n">4</span>Where the portal permission meets the action account</h2>
+  <p class="section-note">MDI response actions split authorization in two. The Defender portal checks the signed-in user's URBAC or Entra role before the action is submitted. The change is then carried out by a service account in the target identity system, which is configured and permissioned separately. Plan both layers, or a persona will see the button, click it, and watch the action fail.</p>
+
+  <div class="tbl-scroll">
+  <table class="combo">
+    <thead>
+      <tr>
+        <th class="rowhead">Response action</th>
+        <th>Portal permission (who can click)</th>
+        <th>Executing account (what performs the change)</th>
+        <th>Where the executing account is permissioned</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">Disable / Enable user in AD</th>
+        <td><span class="perm">Response</span> (manage), or Entra Security Operator / SOC Identity Responder</td>
+        <td>v3.x sensor: domain controller LocalSystem. v2.x: optional gMSA action account.</td>
+        <td><span class="src ad">AD ACCT</span> <code>Read</code> and <code>Write userAccountControl</code> on descendant User objects</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Force password reset in AD</th>
+        <td><span class="perm">Response</span> (manage), or Entra Security Operator / SOC Identity Responder</td>
+        <td>v3.x sensor: LocalSystem. v2.x: optional gMSA action account.</td>
+        <td><span class="src ad">AD ACCT</span> <code>Reset password</code>, <code>Read</code> and <code>Write pwdLastSet</code></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Disable / Revoke session in Entra ID</th>
+        <td><span class="perm">Response</span> (manage) plus an Entra role (User Administrator, Authentication Administrator, Privileged Authentication Administrator, Directory Writers, Helpdesk Administrator for Revoke, or SOC Identity Responder)</td>
+        <td>Microsoft-managed enterprise app "Microsoft Defender for Identity"</td>
+        <td><span class="src entra">ENTRA</span> Managed by Microsoft, App ID <code>60ca1954…</code></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Mark as compromised (Entra ID)</th>
+        <td><span class="perm">Response</span> (manage) plus Entra Global Administrator, Security Administrator, Security Operator, or SOC Identity Responder</td>
+        <td>Entra ID Protection through the managed enterprise app</td>
+        <td><span class="src entra">ENTRA</span> Microsoft-managed</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Read AD for entity resolution</th>
+        <td><span class="perm">Security data basics</span> (read) to view results</td>
+        <td>Directory Service Account (read-only), separate from the action account</td>
+        <td><span class="src ad">AD ACCT</span> Read-only on all AD objects, including Deleted Objects</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🔐</div>
+    <div>
+      <h4>The action account is not the directory service account</h4>
+      <p>MDI uses two distinct on-premises accounts. The Directory Service Account reads Active Directory for entity data and needs read-only rights across all objects. The action account writes changes for Disable user (Read and Write <code>userAccountControl</code>) and Force password reset (Reset password, plus Read and Write <code>pwdLastSet</code>). Keep them separate, since they carry different permission scopes. On v3.x sensors both roles always use the domain controller's LocalSystem account, with no gMSA option; a dedicated gMSA applies only to v2.x sensors or specific cross-domain scenarios.</p>
+    </div>
+  </div>
+
+  <!-- OUT OF SCOPE -->
+  <h2><span class="n">5</span>Explicitly outside Unified RBAC</h2>
+  <p class="section-note">Microsoft governs these identity areas with a model other than URBAC. Assign the alternative instead of trying to cover them with a Defender portal permission.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead><tr><th>Capability</th><th>Permission model</th></tr></thead>
+    <tbody>
+      <tr><td class="pname">Install MDI sensor on a DC / AD FS / AD CS / Entra Connect server</td><td><span class="src ad">AD ACCT</span> Local Administrator on the target server</td></tr>
+      <tr><td class="pname">Create the Directory Service Account (gMSA) and delegate read</td><td><span class="src ad">AD ACCT</span> Domain Admin or delegated AD administrator</td></tr>
+      <tr><td class="pname">Grant the action account AD write permissions (v2.x)</td><td><span class="src ad">AD ACCT</span> Domain Admin or delegated AD administrator</td></tr>
+      <tr><td class="pname">Response actions executing in Entra ID</td><td><span class="src entra">ENTRA</span> Entra ID roles (User Administrator, SOC Identity Responder…)</td></tr>
+      <tr><td class="pname">Onboard MDI / create the workspace</td><td><span class="src entra">ENTRA</span> Security Administrator plus license assignment</td></tr>
+      <tr><td class="pname">SIEM / Sentinel integration of MDI signals</td><td><span class="src entra">ENTRA</span> respective platform role (for example Sentinel Contributor)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- NOTES -->
+  <h2><span class="n">6</span>Best-practice notes</h2>
+  <ul class="notes">
+    <li><strong>Build custom URBAC roles from specific permissions.</strong> A Tier-1 identity analyst needs only Security data basics (read); a responder adds Alerts (manage) and Response (manage). Combine the exact permissions rather than assigning a broad Entra role.</li>
+    <li><strong>Plan both authorization layers for response.</strong> Response (manage) lets a user click Disable user, but the action account must be configured and permissioned for the change to land. For Entra-targeted actions, the user also needs an Entra role such as SOC Identity Responder.</li>
+    <li><strong>Prefer SOC Identity Responder for Tier-2.</strong> This dedicated Entra role covers the identity response actions without the broader reach of Security Operator, which makes it the tighter least-privilege choice for responders.</li>
+    <li><strong>Keep the DSA and action account separate.</strong> The Directory Service Account is read-only; the action account writes. Reusing one gMSA for both over-grants the read account.</li>
+    <li><strong>Scoped roles cannot see posture.</strong> The Exposure Management section is hidden from users with an MDI scoped assignment, so an Identity Posture Administrator needs an unscoped role to review ISPM recommendations.</li>
+    <li><strong>Sensor installation lives outside URBAC.</strong> System settings (manage) generates the access key in the portal, but installing the sensor on a domain controller requires local administrator rights on that server.</li>
+    <li><strong>Entra roles override URBAC.</strong> Security Administrator in Entra is automatically treated as an MDI administrator, so it is broader than a scoped custom role. Reach for the URBAC permission when you want a tight boundary.</li>
+    <li><strong>Elevate high-privilege roles just in time.</strong> Grant Security Administrator and Global Administrator through Microsoft Entra Privileged Identity Management (PIM) as time-boxed, approval-gated activations rather than standing assignments.</li>
+    <li><strong>Keep dedicated break-glass accounts.</strong> Maintain at least two cloud-only emergency-access accounts excluded from Conditional Access, and reserve Global Administrator for them.</li>
+    <li><strong>Separate duties and audit.</strong> Split configuration (Core and System settings) from response (Response), and monitor changes to entity tags, exclusions, sensors, roles, and every response action in the unified audit log.</li>
+  </ul>
+
+  <footer class="page">
+    Reference model for Microsoft Defender for Identity Unified RBAC, plus the action account and Entra handoffs. Permission names and scope per Microsoft Learn
+    (<a href="https://learn.microsoft.com/en-us/defender-xdr/custom-permissions-details">Permissions in Microsoft Defender unified RBAC</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-for-identity/role-groups">Defender for Identity role groups</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-for-identity/remediation-actions">Remediation actions for compromised users</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-for-identity/deploy/manage-action-accounts">Manage action accounts</a>),
+    as of August 2026. Verify permission names against your tenant, since URBAC rollout and catalog contents change over time.
+  </footer>
+
+</div>
+</body>
+</html>

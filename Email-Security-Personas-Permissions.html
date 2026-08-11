@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Security Personas &amp; Unified RBAC Permissions</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.55;
+  font-size: 15px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+
+header.page { margin-bottom: 8px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cp-accent);
+}
+h1 { font-size: 30px; margin: 6px 0 8px; letter-spacing: -0.01em; }
+.lede { font-size: 16px; color: var(--cp-text-muted); max-width: 880px; margin: 0; }
+
+h2 {
+  font-size: 20px; margin: 46px 0 8px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--cp-border);
+}
+h2 .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px; margin-right: 10px;
+  background: var(--cp-accent); color: var(--cp-accent-fg);
+  font-size: 14px; font-weight: 700; vertical-align: middle;
+}
+.section-note { color: var(--cp-text-muted); font-size: 14px; margin: 6px 0 18px; max-width: 940px; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 12px; padding: 16px 18px; margin: 22px 0 8px;
+}
+.legend .grp { display: flex; flex-direction: column; gap: 8px; }
+.legend .grp-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cp-text-soft); }
+.legend .items { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend .li { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cp-text-muted); }
+
+.lvl {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid transparent;
+}
+.lvl .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lvl.full { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: color-mix(in srgb, var(--cp-accent) 32%, transparent); }
+.lvl.full .dot { background: var(--cp-accent); }
+.lvl.config { background: color-mix(in srgb, var(--cp-success) 12%, transparent); color: var(--cp-success); border-color: color-mix(in srgb, var(--cp-success) 34%, transparent); }
+.lvl.config .dot { background: var(--cp-success); }
+.lvl.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent); }
+.lvl.read .dot { background: var(--cp-warning); }
+.lvl.none { background: var(--cp-surface-soft); color: var(--cp-text-soft); border-color: var(--cp-border); }
+.lvl.none .dot { background: var(--cp-border-strong); }
+
+.src {
+  display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 6px; border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft); color: var(--cp-text-muted); white-space: nowrap;
+}
+.src.entra { border-color: color-mix(in srgb, var(--cp-link) 45%, transparent); color: var(--cp-link); background: color-mix(in srgb, var(--cp-link) 10%, transparent); }
+.src.exo { border-color: color-mix(in srgb, var(--cp-accent) 40%, transparent); color: var(--cp-accent); background: var(--cp-accent-soft); }
+.src.urbac { border-color: color-mix(in srgb, var(--cp-success) 40%, transparent); color: var(--cp-success); background: color-mix(in srgb, var(--cp-success) 10%, transparent); }
+.src.purview { border-color: color-mix(in srgb, var(--cp-warning) 45%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); background: color-mix(in srgb, var(--cp-warning) 12%, transparent); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; margin-top: 20px; }
+.card {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 14px; padding: 16px 17px; box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card .top { display: flex; align-items: flex-start; gap: 11px; }
+.card .ic {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.card h3 { margin: 0; font-size: 15.5px; line-height: 1.25; }
+.card .role-line { font-size: 11.5px; color: var(--cp-text-soft); margin-top: 3px; line-height: 1.4; }
+.card p { margin: 0; font-size: 13px; color: var(--cp-text-muted); }
+.card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 4px; }
+
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 12px; margin-top: 20px; box-shadow: var(--cp-shadow); }
+table { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 13px; background: var(--cp-surface); }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--cp-bg-elevated); color: var(--cp-text);
+  text-align: left; font-size: 12px; font-weight: 700; padding: 12px 12px;
+  border-bottom: 2px solid var(--cp-border-strong); vertical-align: bottom;
+}
+thead th.rowhead { z-index: 3; left: 0; min-width: 214px; }
+tbody th.rowhead {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--cp-bg-elevated); text-align: left; font-weight: 600;
+  padding: 11px 12px; border-bottom: 1px solid var(--cp-border);
+  border-right: 1px solid var(--cp-border); min-width: 214px; vertical-align: top;
+}
+tbody th.rowhead .sub { display: block; font-size: 11px; font-weight: 400; color: var(--cp-text-soft); margin-top: 2px; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--cp-border); vertical-align: top; }
+tbody tr:hover td, tbody tr:hover th.rowhead { background: var(--cp-highlight); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+.cellnote { display: block; font-size: 11px; color: var(--cp-text-soft); margin-top: 4px; line-height: 1.35; }
+
+table.combo { min-width: 1080px; }
+table.combo td.feat { font-weight: 600; color: var(--cp-text); }
+table.combo code, .card code, .notes code, .cellnote code {
+  font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px;
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+  border-radius: 5px; padding: 1px 5px; color: var(--cp-accent);
+}
+.perm { font-weight: 600; color: var(--cp-success); }
+.outscope { color: var(--cp-text-soft); font-style: italic; }
+.pillrow { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.callout {
+  display: flex; gap: 13px; background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-left: 4px solid var(--cp-accent); border-radius: 10px; padding: 15px 17px; margin: 16px 0;
+}
+.callout .ci { font-size: 18px; flex: none; }
+.callout h4 { margin: 0 0 4px; font-size: 14px; }
+.callout p { margin: 0; font-size: 13.5px; color: var(--cp-text-muted); }
+.callout.info { border-left-color: var(--cp-link); }
+
+.permtable { min-width: 720px; }
+.permtable td.pname { font-weight: 600; }
+.lvlbadge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.lvlbadge.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); }
+.lvlbadge.manage { background: var(--cp-accent-soft); color: var(--cp-accent); }
+
+.notes { margin: 14px 0 0; padding-left: 20px; }
+.notes li { font-size: 13.5px; color: var(--cp-text-muted); margin: 7px 0; }
+
+footer.page {
+  margin-top: 54px; padding-top: 18px; border-top: 1px solid var(--cp-border);
+  font-size: 12.5px; color: var(--cp-text-soft);
+}
+footer.page a { color: var(--cp-link); text-decoration: none; }
+footer.page a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 26px 16px 60px; }
+  h1 { font-size: 25px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Microsoft Defender for Office 365 · Unified RBAC</div>
+    <h1>Email Security Personas &amp; Unified RBAC Permissions</h1>
+    <p class="lede">Common roles for managing email security, mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions. URBAC is the default model for new Defender for Office 365 Plan 2 organizations as of July 2026. Tasks outside URBAC scope (mail flow, message trace, PowerShell) fall back to <strong>Exchange Online RBAC</strong>, and those combinations are called out.</p>
+  </header>
+
+  <div class="callout info">
+    <div class="ci">📌</div>
+    <div>
+      <h4>What URBAC does and does not cover</h4>
+      <p>Unified RBAC governs the Microsoft Defender portal at <code>security.microsoft.com</code> only. It does <strong>not</strong> apply to the Exchange admin center, the Microsoft Purview portal, or PowerShell, which use Exchange Online RBAC. Microsoft Entra roles such as Security Administrator always grant access regardless of URBAC activation.</p>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="grp">
+      <span class="grp-title">Access level</span>
+      <div class="items">
+        <span class="li"><span class="lvl full"><span class="dot"></span>Full / Manage</span></span>
+        <span class="li"><span class="lvl config"><span class="dot"></span>Configure / Act</span></span>
+        <span class="li"><span class="lvl read"><span class="dot"></span>Read-only</span></span>
+        <span class="li"><span class="lvl none"><span class="dot"></span>None</span></span>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-title">Permission model</span>
+      <div class="items">
+        <span class="li"><span class="src urbac">URBAC</span> Defender Unified RBAC permission</span>
+        <span class="li"><span class="src exo">EXO</span> Exchange Online RBAC (PowerShell / mail flow)</span>
+        <span class="li"><span class="src entra">ENTRA</span> Microsoft Entra ID role</span>
+        <span class="li"><span class="src purview">PURVIEW</span> Purview / compliance</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- URBAC PERMISSION REFERENCE -->
+  <h2><span class="n">1</span>The Unified RBAC permissions in play</h2>
+  <p class="section-note">Every email-security task in the Defender portal maps to one of these URBAC permissions. Build custom roles by combining the specific permissions a persona needs, rather than assigning a broad Entra role.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead>
+      <tr><th>URBAC permission</th><th>Level</th><th>What it enables</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="pname">Security data basics</td><td><span class="lvlbadge read">Read</span></td><td>View incidents, alerts, investigations, advanced hunting data, submissions, quarantine, and reports</td></tr>
+      <tr><td class="pname">Alerts</td><td><span class="lvlbadge manage">Manage</span></td><td>Classify, assign, and comment on alerts and incidents; start automated investigations</td></tr>
+      <tr><td class="pname">Response</td><td><span class="lvlbadge manage">Manage</span></td><td>Approve or dismiss remediation actions, submit messages to Microsoft, manage automation lists</td></tr>
+      <tr><td class="pname">Email &amp; collaboration metadata</td><td><span class="lvlbadge read">Read</span></td><td>View email data in Threat Explorer, the email entity page, campaigns, and threat trackers</td></tr>
+      <tr><td class="pname">Email &amp; collaboration content</td><td><span class="lvlbadge read">Read</span></td><td>View and download email content and attachments</td></tr>
+      <tr><td class="pname">Email &amp; collaboration quarantine</td><td><span class="lvlbadge manage">Manage</span></td><td>View and release quarantined email and Teams messages</td></tr>
+      <tr><td class="pname">Email &amp; collaboration advanced actions</td><td><span class="lvlbadge manage">Manage</span></td><td>Soft delete and hard delete email; remediate from Threat Explorer and advanced hunting</td></tr>
+      <tr><td class="pname">Core security settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>Threat policies, quarantine policies, preset security policies, SPF/DKIM/DMARC settings, Configuration Analyzer, user-reported settings, and viewing TABL entries</td></tr>
+      <tr><td class="pname">Detection tuning</td><td><span class="lvlbadge manage">Manage</span></td><td>Alert policies, custom detections, and adding/modifying/removing Tenant Allow/Block List entries</td></tr>
+      <tr><td class="pname">System settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>User tags and priority account tags</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- PERSONAS -->
+  <h2><span class="n">2</span>The personas</h2>
+  <p class="section-note">Job-shaped roles you actually assign, each expressed as the URBAC permission set it needs. Where a persona also acts through PowerShell or mail flow, the Exchange Online role it additionally requires is noted. Prefer the narrowest permission set that covers the task.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="top">
+        <div class="ic">🛡️</div>
+        <div><h3>Security Administrator</h3><div class="role-line">URBAC: Core security settings (manage) + Detection tuning (manage). Entra: Security Administrator for the whole set.</div></div>
+      </div>
+      <p>Owns email defense: threat policies, Safe Links/Attachments, preset policies, email authentication, and the Tenant Allow/Block List.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src entra">ENTRA</span><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔎</div>
+        <div><h3>SOC Analyst · Responder</h3><div class="role-line">URBAC: Security data basics (read) + Alerts (manage) + Response (manage) + E&amp;C advanced actions (manage)</div></div>
+      </div>
+      <p>Tier-2/3 investigation and response: triages Explorer, hunts, remediates mail, releases quarantine, and approves automated actions.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">👁️</div>
+        <div><h3>SOC Analyst · Reader</h3><div class="role-line">URBAC: Security data basics (read) + E&amp;C metadata (read)</div></div>
+      </div>
+      <p>Tier-1 monitoring: views Explorer, incidents, reports, and quarantine, and takes no action. Add E&amp;C content (read) only if previewing message bodies is required.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🧰</div>
+        <div><h3>Threat Policy Administrator</h3><div class="role-line">URBAC: Core security settings (manage)</div></div>
+      </div>
+      <p>Configures anti-spam, anti-malware, anti-phishing, Safe Links/Attachments, connection filter, preset policies, and email authentication, without incident-response rights.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">📥</div>
+        <div><h3>Quarantine Reviewer</h3><div class="role-line">URBAC: Security data basics (read) + E&amp;C quarantine (manage)</div></div>
+      </div>
+      <p>Reviews and releases quarantined mail. Release scope is bounded by the quarantine policy attached to each protection.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🕵️</div>
+        <div><h3>Threat Hunter</h3><div class="role-line">URBAC: Security data basics (read) + Detection tuning (manage); add Response + E&amp;C advanced actions to act</div></div>
+      </div>
+      <p>Proactive hunting across email telemetry with advanced hunting and Explorer; builds and tunes custom detections.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">📨</div>
+        <div><h3>Exchange Administrator</h3><div class="role-line">Entra: Exchange Administrator · EXO: Organization Management (outside URBAC)</div></div>
+      </div>
+      <p>Owns mail flow: transport (mail flow) rules, connectors, accepted/remote domains, mailboxes, and message trace. These sit in Exchange, not URBAC.</p>
+      <div class="tags"><span class="src entra">ENTRA</span><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔀</div>
+        <div><h3>Mail Flow Administrator</h3><div class="role-line">EXO roles: Transport Rules, Message Tracking (outside URBAC)</div></div>
+      </div>
+      <p>Narrow Exchange slice: manages transport rules and connectors and runs message traces for capture, journaling, and delivery troubleshooting.</p>
+      <div class="tags"><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🎫</div>
+        <div><h3>Help Desk / Service Desk</h3><div class="role-line">URBAC: Security data basics (read) + E&amp;C quarantine (manage) · EXO: Message Tracking</div></div>
+      </div>
+      <p>Tier-1 support: checks delivery, runs message trace (Exchange), and releases end-user quarantine within policy.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🎯</div>
+        <div><h3>Attack Simulation Administrator</h3><div class="role-line">Entra: Attack Simulation Administrator (outside URBAC)</div></div>
+      </div>
+      <p>Builds, schedules, and reviews phishing simulations and training. Attack Simulation Training is governed by Entra roles, not URBAC.</p>
+      <div class="tags"><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">⚖️</div>
+        <div><h3>Compliance / eDiscovery Manager</h3><div class="role-line">Purview: eDiscovery Manager, Search &amp; Purge (outside URBAC)</div></div>
+      </div>
+      <p>Content search, legal holds, and bulk purge of malicious mail at scale. Governed by Purview roles, distinct from the Defender portal.</p>
+      <div class="tags"><span class="src purview">PURVIEW</span><span class="src exo">EXO</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔑</div>
+        <div><h3>Global Reader / Global Administrator</h3><div class="role-line">Entra: Global Reader (read-all) · Global Administrator (break-glass)</div></div>
+      </div>
+      <p>Tenant-wide Entra roles. Global Reader sees every setting and report; Global Administrator can do anything, which is why it should be break-glass only.</p>
+      <div class="tags"><span class="src entra">ENTRA</span></div>
+    </div>
+  </div>
+
+  <!-- MATRIX -->
+  <h2><span class="n">3</span>Permission matrix: persona &times; task</h2>
+  <p class="section-note">Each cell shows the access level and the URBAC permission that grants it. Tasks that URBAC does not cover show the Exchange Online role instead. Watch the <span class="src exo">EXO</span> notes: those are the points where email security reaches outside URBAC.</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="rowhead">Task / capability</th>
+        <th>Security<br>Admin</th>
+        <th>SOC<br>Responder</th>
+        <th>SOC<br>Reader</th>
+        <th>Threat Policy<br>Admin</th>
+        <th>Quarantine<br>Reviewer</th>
+        <th>Help<br>Desk</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">Threat policies (anti-spam / phish / malware, Safe Links / Attachments)<span class="sub">View vs configure</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">Core security settings (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">Core security settings (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Email authentication (SPF / DKIM / DMARC)<span class="sub">Portal settings; DKIM signing</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings; DKIM cmdlets need <span class="src exo">EXO</span></span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Tenant Allow/Block List (TABL)<span class="sub">Domains, URLs, files, IPv6, spoof</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Detection tuning (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage</span><span class="cellnote">Detection tuning (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">Core security settings (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">Core security settings (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Quarantine: review &amp; release<span class="sub">Scope set by quarantine policy</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">E&amp;C quarantine (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Release</span><span class="cellnote">E&amp;C quarantine (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">E&amp;C quarantine (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Release*</span><span class="cellnote">*within policy</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Threat Explorer / Real-time detections<span class="sub">Metadata vs content</span></th>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">E&amp;C metadata (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Full</span><span class="cellnote">metadata + content (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Read</span><span class="cellnote">E&amp;C metadata (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Advanced hunting + take actions<span class="sub">KQL over EmailEvents etc.</span></th>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Query + act</span><span class="cellnote">Response + E&amp;C advanced actions</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Email remediation: soft / hard delete<span class="sub">Explorer actions &amp; AIR</span></th>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">separate from policy admin</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Act</span><span class="cellnote">E&amp;C advanced actions (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Admin submissions (report to Microsoft)<span class="sub">FP/FN reporting</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Submit</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Submit</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Submit</span><span class="cellnote">Response (manage)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Incidents &amp; alerts<span class="sub">View vs manage</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Mail flow (transport) rules, connectors<span class="sub">Redirect, block, journaling, SEG</span></th>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">outside URBAC</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Message trace<span class="sub">Get-MessageTraceV2</span></th>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">needs <span class="src exo">EXO</span> role</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Run</span><span class="cellnote"><span class="src exo">EXO</span> Message Tracking</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Run</span><span class="cellnote"><span class="src exo">EXO</span> Message Tracking</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note" style="margin-top:12px">Exchange Administrator, Mail Flow Administrator, Attack Simulation Administrator, Compliance Manager, and the Global roles are omitted from the columns for width. The first two own the <span class="src exo">EXO</span> mail-flow and message-trace rows; Attack Simulation and Compliance sit outside URBAC (Entra and Purview); Global Reader reads every row and Global Administrator can do all of them.</p>
+
+  <!-- COMBINED SECTION -->
+  <h2><span class="n">4</span>Where Unified RBAC and Exchange Online RBAC combine</h2>
+  <p class="section-note">Several features are configured in the Defender portal under URBAC, but the <strong>same action through PowerShell or mail flow needs an Exchange Online role</strong>, because URBAC does not extend to PowerShell or the Exchange admin center. Plan both when a persona or an automation account works through cmdlets.</p>
+
+  <div class="tbl-scroll">
+  <table class="combo">
+    <thead>
+      <tr>
+        <th class="rowhead">Feature</th>
+        <th>URBAC permission (Defender portal)</th>
+        <th>Same action via PowerShell / mail flow</th>
+        <th>Exchange Online role required there</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">Anti-spam / malware / phish policies</th>
+        <td><span class="perm">Core security settings</span> (manage)</td>
+        <td><code>Set-HostedContentFilterPolicy</code>, <code>Set-MalwareFilterPolicy</code>, <code>Set-AntiPhishPolicy</code></td>
+        <td>Security Administrator, or a hygiene-scoped custom role</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Safe Links / Safe Attachments</th>
+        <td><span class="perm">Core security settings</span> (manage)</td>
+        <td><code>Set-SafeLinksPolicy</code>, <code>Set-SafeAttachmentPolicy</code></td>
+        <td>Organization Management / Security Administrator</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Tenant Allow/Block List</th>
+        <td>View: <span class="perm">Core security settings</span> (read)<br>Manage: <span class="perm">Detection tuning</span> (manage)</td>
+        <td><code>Get/New/Remove-TenantAllowBlockListItems</code></td>
+        <td>Custom role scoped to just the TABL cmdlets (least privilege)</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Email authentication (DKIM signing)</th>
+        <td><span class="perm">Core security settings</span> (manage)</td>
+        <td><code>New-DkimSigningConfig</code>, <code>Set-DkimSigningConfig</code></td>
+        <td>Organization Management / Security Administrator. SPF and DMARC are DNS records, outside RBAC.</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Quarantine management</th>
+        <td><span class="perm">E&amp;C quarantine</span> (manage)</td>
+        <td><code>Get/Release/Delete-QuarantineMessage</code></td>
+        <td>Exchange <em>Quarantine</em> role, bounded by quarantine policy</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Message trace</th>
+        <td><span class="outscope">Outside URBAC scope</span></td>
+        <td><code>Get-MessageTraceV2</code>, <code>Get-MessageTraceDetailV2</code></td>
+        <td>Exchange <em>Message Tracking</em> role</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Interception / capture, journaling</th>
+        <td><span class="outscope">Outside URBAC scope</span></td>
+        <td><code>New-TransportRule</code>, <code>New-JournalRule</code></td>
+        <td>Exchange <em>Transport Rules</em> role</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Mail flow connectors (SEG integration)</th>
+        <td><span class="outscope">Outside URBAC scope</span></td>
+        <td><code>Set-InboundConnector</code>, <code>Set-HostedConnectionFilterPolicy</code></td>
+        <td>Organization Management</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Bulk email remediation (purge at scale)</th>
+        <td><span class="perm">E&amp;C advanced actions</span> (manage) for Explorer/AIR</td>
+        <td>Compliance search purge (Purview)</td>
+        <td><span class="src purview">PURVIEW</span> eDiscovery + Search and Purge</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🔐</div>
+    <div>
+      <h4>App-only automation shows the pattern</h4>
+      <p>An unattended service that writes to the Tenant Allow/Block List authenticates app-only to Exchange Online and needs an Exchange RBAC role that can run the TABL cmdlets. URBAC does not apply to PowerShell, so a Defender portal permission alone will not authorize the write. A least-privilege option is a custom EXO role group limited to <code>Get-</code>/<code>New-</code>/<code>Remove-TenantAllowBlockListItems</code>, granted through <code>Exchange.ManageAsApp</code>, which avoids giving the app Security Administrator across the tenant.</p>
+    </div>
+  </div>
+
+  <!-- OUT OF SCOPE -->
+  <h2><span class="n">5</span>Explicitly outside Unified RBAC</h2>
+  <p class="section-note">Microsoft lists these features as outside URBAC scope. Assign the alternative model instead of trying to cover them with a Defender portal permission.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead><tr><th>Feature</th><th>Permission model</th></tr></thead>
+    <tbody>
+      <tr><td class="pname">Attack Simulation Training</td><td><span class="src entra">ENTRA</span> Microsoft Entra roles</td></tr>
+      <tr><td class="pname">Remove users from Teams chats</td><td><span class="src entra">ENTRA</span> Microsoft Entra roles</td></tr>
+      <tr><td class="pname">Message trace</td><td><span class="src exo">EXO</span> Exchange Online roles</td></tr>
+      <tr><td class="pname">Mail flow reports</td><td><span class="src exo">EXO</span> Exchange Online roles</td></tr>
+      <tr><td class="pname">Mail flow connectors</td><td><span class="src exo">EXO</span> Exchange Online roles</td></tr>
+      <tr><td class="pname">PowerShell cmdlets (all workloads)</td><td><span class="src exo">EXO</span> Exchange Online roles</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- NOTES -->
+  <h2><span class="n">6</span>Best-practice notes</h2>
+  <ul class="notes">
+    <li><strong>Build custom URBAC roles from specific permissions.</strong> Combine the exact permissions a persona needs (for example Security data basics + Alerts for a Tier-1 responder) instead of assigning a broad Entra role. This is the least-privilege path URBAC is designed for.</li>
+    <li><strong>Entra roles override URBAC.</strong> Assigning Security Administrator in Microsoft Entra grants the underlying access regardless of URBAC activation, so it is broader than a scoped URBAC role. Reach for the URBAC permission when you want a tight boundary.</li>
+    <li><strong>Configure your URBAC roles before activating URBAC.</strong> Once Unified RBAC is turned on, the older Email &amp; collaboration roles page is no longer available, so import or map roles first.</li>
+    <li><strong>Portal permission does not equal cmdlet permission.</strong> A persona with a URBAC permission can act in the Defender portal but still needs an Exchange Online role to run the equivalent PowerShell. If a scripted change fails with an access error, the missing piece is almost always an Exchange RBAC role.</li>
+    <li><strong>Quarantine release is policy-gated.</strong> Even with E&amp;C quarantine (manage), what a reviewer can release depends on the quarantine policy attached to each protection.</li>
+    <li><strong>Elevate high-privilege roles just in time.</strong> Grant Security Administrator, Exchange Administrator, and Global Administrator through Microsoft Entra Privileged Identity Management (PIM) as time-boxed, approval-gated activations rather than standing assignments.</li>
+    <li><strong>Keep dedicated break-glass accounts.</strong> Maintain at least two cloud-only emergency-access accounts excluded from Conditional Access, and reserve Global Administrator for them.</li>
+    <li><strong>Prefer preset security policies.</strong> Microsoft recommends the Standard and Strict presets over hand-built policies for most tenants; they are managed under Core security settings (manage).</li>
+    <li><strong>Separate duties and audit.</strong> Split policy configuration (Core security settings) from remediation approval (Response), and monitor changes to threat policies, TABL, transport rules, and connectors in the unified audit log.</li>
+  </ul>
+
+  <footer class="page">
+    Reference model for Microsoft Defender for Office 365 Unified RBAC + Exchange Online RBAC. Permission names and scope per Microsoft Learn
+    (<a href="https://learn.microsoft.com/en-us/defender-office-365/defender-office-365-unified-rbac-permissions">Unified RBAC permissions for Defender for Office 365</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-office-365/tenant-allow-block-list-about">Tenant Allow/Block List</a>,
+    <a href="https://learn.microsoft.com/en-us/exchange/permissions-exo/permissions-exo">Permissions in Exchange Online</a>),
+    as of August 2026. Verify permission names against your tenant, since URBAC rollout and catalog contents change over time.
+  </footer>
+
+</div>
+</body>
+</html>

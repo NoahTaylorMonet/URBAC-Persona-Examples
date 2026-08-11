@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endpoint Security Personas &amp; Unified RBAC Permissions</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.55;
+  font-size: 15px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 40px 28px 80px; }
+
+header.page { margin-bottom: 8px; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--cp-accent);
+}
+h1 { font-size: 30px; margin: 6px 0 8px; letter-spacing: -0.01em; }
+.lede { font-size: 16px; color: var(--cp-text-muted); max-width: 880px; margin: 0; }
+
+h2 {
+  font-size: 20px; margin: 46px 0 8px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--cp-border);
+}
+h2 .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px; margin-right: 10px;
+  background: var(--cp-accent); color: var(--cp-accent-fg);
+  font-size: 14px; font-weight: 700; vertical-align: middle;
+}
+.section-note { color: var(--cp-text-muted); font-size: 14px; margin: 6px 0 18px; max-width: 940px; }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 12px; padding: 16px 18px; margin: 22px 0 8px;
+}
+.legend .grp { display: flex; flex-direction: column; gap: 8px; }
+.legend .grp-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--cp-text-soft); }
+.legend .items { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend .li { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cp-text-muted); }
+
+.lvl {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid transparent;
+}
+.lvl .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.lvl.full { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: color-mix(in srgb, var(--cp-accent) 32%, transparent); }
+.lvl.full .dot { background: var(--cp-accent); }
+.lvl.config { background: color-mix(in srgb, var(--cp-success) 12%, transparent); color: var(--cp-success); border-color: color-mix(in srgb, var(--cp-success) 34%, transparent); }
+.lvl.config .dot { background: var(--cp-success); }
+.lvl.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); border-color: color-mix(in srgb, var(--cp-warning) 40%, transparent); }
+.lvl.read .dot { background: var(--cp-warning); }
+.lvl.none { background: var(--cp-surface-soft); color: var(--cp-text-soft); border-color: var(--cp-border); }
+.lvl.none .dot { background: var(--cp-border-strong); }
+
+.src {
+  display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .03em;
+  padding: 2px 7px; border-radius: 6px; border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft); color: var(--cp-text-muted); white-space: nowrap;
+}
+.src.entra { border-color: color-mix(in srgb, var(--cp-link) 45%, transparent); color: var(--cp-link); background: color-mix(in srgb, var(--cp-link) 10%, transparent); }
+.src.urbac { border-color: color-mix(in srgb, var(--cp-success) 40%, transparent); color: var(--cp-success); background: color-mix(in srgb, var(--cp-success) 10%, transparent); }
+.src.intune { border-color: color-mix(in srgb, var(--cp-warning) 45%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); background: color-mix(in srgb, var(--cp-warning) 12%, transparent); }
+.src.api { border-color: color-mix(in srgb, var(--cp-accent) 40%, transparent); color: var(--cp-accent); background: var(--cp-accent-soft); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; margin-top: 20px; }
+.card {
+  background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 14px; padding: 16px 17px; box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.10);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card .top { display: flex; align-items: flex-start; gap: 11px; }
+.card .ic {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.card h3 { margin: 0; font-size: 15.5px; line-height: 1.25; }
+.card .role-line { font-size: 11.5px; color: var(--cp-text-soft); margin-top: 3px; line-height: 1.4; }
+.card p { margin: 0; font-size: 13px; color: var(--cp-text-muted); }
+.card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 4px; }
+
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--cp-border); border-radius: 12px; margin-top: 20px; box-shadow: var(--cp-shadow); }
+table { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 13px; background: var(--cp-surface); }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--cp-bg-elevated); color: var(--cp-text);
+  text-align: left; font-size: 12px; font-weight: 700; padding: 12px 12px;
+  border-bottom: 2px solid var(--cp-border-strong); vertical-align: bottom;
+}
+thead th.rowhead { z-index: 3; left: 0; min-width: 214px; }
+tbody th.rowhead {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--cp-bg-elevated); text-align: left; font-weight: 600;
+  padding: 11px 12px; border-bottom: 1px solid var(--cp-border);
+  border-right: 1px solid var(--cp-border); min-width: 214px; vertical-align: top;
+}
+tbody th.rowhead .sub { display: block; font-size: 11px; font-weight: 400; color: var(--cp-text-soft); margin-top: 2px; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--cp-border); vertical-align: top; }
+tbody tr:hover td, tbody tr:hover th.rowhead { background: var(--cp-highlight); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+.cellnote { display: block; font-size: 11px; color: var(--cp-text-soft); margin-top: 4px; line-height: 1.35; }
+
+table.combo { min-width: 1080px; }
+table.combo td.feat { font-weight: 600; color: var(--cp-text); }
+table.combo code, .card code, .notes code, .cellnote code {
+  font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px;
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border);
+  border-radius: 5px; padding: 1px 5px; color: var(--cp-accent);
+}
+.perm { font-weight: 600; color: var(--cp-success); }
+.outscope { color: var(--cp-text-soft); font-style: italic; }
+.pillrow { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.callout {
+  display: flex; gap: 13px; background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-left: 4px solid var(--cp-accent); border-radius: 10px; padding: 15px 17px; margin: 16px 0;
+}
+.callout .ci { font-size: 18px; flex: none; }
+.callout h4 { margin: 0 0 4px; font-size: 14px; }
+.callout p { margin: 0; font-size: 13.5px; color: var(--cp-text-muted); }
+.callout.info { border-left-color: var(--cp-link); }
+
+.permtable { min-width: 720px; }
+.permtable td.pname { font-weight: 600; }
+.lvlbadge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.lvlbadge.read { background: color-mix(in srgb, var(--cp-warning) 14%, transparent); color: color-mix(in srgb, var(--cp-warning) 82%, var(--cp-text)); }
+.lvlbadge.manage { background: var(--cp-accent-soft); color: var(--cp-accent); }
+
+.notes { margin: 14px 0 0; padding-left: 20px; }
+.notes li { font-size: 13.5px; color: var(--cp-text-muted); margin: 7px 0; }
+
+footer.page {
+  margin-top: 54px; padding-top: 18px; border-top: 1px solid var(--cp-border);
+  font-size: 12.5px; color: var(--cp-text-soft);
+}
+footer.page a { color: var(--cp-link); text-decoration: none; }
+footer.page a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 26px 16px 60px; }
+  h1 { font-size: 25px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Microsoft Defender for Endpoint · Unified RBAC</div>
+    <h1>Endpoint Security Personas &amp; Unified RBAC Permissions</h1>
+    <p class="lede">Common roles for managing endpoint security, mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions. URBAC is the default model for every new Defender for Endpoint tenant provisioned since early 2025. Device configuration in Intune, security settings management, and the Defender for Endpoint APIs sit outside URBAC, and those handoffs are called out.</p>
+  </header>
+
+  <div class="callout">
+    <div class="ci">📄</div>
+    <div>
+      <h4>Guidance only</h4>
+      <p>These personas and permission mappings are illustrative examples, not a configuration baseline. They reflect Microsoft Learn documentation captured on 3 August 2026, they are static, and Microsoft's permission catalog, role names, and RBAC rollout change over time. Verify every permission against your own tenant before you assign it, and treat this page as a starting point rather than an authoritative source.</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="ci">📌</div>
+    <div>
+      <h4>What URBAC covers, and what device groups still scope</h4>
+      <p>Unified RBAC governs the Microsoft Defender portal at <code>security.microsoft.com</code> and replaces the legacy Defender for Endpoint role model. Data access is still bounded by <strong>device groups</strong> (machine groups): a role only sees and acts on the device groups it is assigned. Endpoint security <em>policies</em> (antivirus, firewall, EDR, ASR) live in Microsoft Intune under Intune RBAC, and unattended automation authenticates through Azure AD app permissions, neither of which URBAC touches.</p>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="grp">
+      <span class="grp-title">Access level</span>
+      <div class="items">
+        <span class="li"><span class="lvl full"><span class="dot"></span>Full / Manage</span></span>
+        <span class="li"><span class="lvl config"><span class="dot"></span>Act / Respond</span></span>
+        <span class="li"><span class="lvl read"><span class="dot"></span>Read-only</span></span>
+        <span class="li"><span class="lvl none"><span class="dot"></span>None</span></span>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-title">Permission model</span>
+      <div class="items">
+        <span class="li"><span class="src urbac">URBAC</span> Defender Unified RBAC permission</span>
+        <span class="li"><span class="src entra">ENTRA</span> Microsoft Entra ID role</span>
+        <span class="li"><span class="src intune">INTUNE</span> Intune RBAC (endpoint policy)</span>
+        <span class="li"><span class="src api">API</span> Azure AD app-only permission</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- URBAC PERMISSION REFERENCE -->
+  <h2><span class="n">1</span>The Unified RBAC permissions in play</h2>
+  <p class="section-note">Every endpoint task in the Defender portal maps to one of these URBAC permissions across three groups: Security operations, Security posture, and Authorization and settings. Build custom roles from the specific permissions a persona needs, then bind each assignment to the device groups it should reach.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead>
+      <tr><th>URBAC permission</th><th>Level</th><th>What it enables for endpoints</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="pname">Security data basics</td><td><span class="lvlbadge read">Read</span></td><td>View incidents, alerts, investigations, device inventory, device timelines, advanced hunting, and reports. The minimum for any analyst touching endpoint data.</td></tr>
+      <tr><td class="pname">Alerts</td><td><span class="lvlbadge manage">Manage</span></td><td>Assign, classify, and comment on alerts; start automated investigations; run antivirus scans; collect investigation packages; manage device tags.</td></tr>
+      <tr><td class="pname">Response</td><td><span class="lvlbadge manage">Manage</span></td><td>Isolate a device, restrict app execution, and approve or dismiss pending automated remediation from the Action center.</td></tr>
+      <tr><td class="pname">Basic live response</td><td><span class="lvlbadge manage">Manage</span></td><td>Start a live response session, run read-only commands, and download files from a device (<code>getfile</code>).</td></tr>
+      <tr><td class="pname">Advanced live response</td><td><span class="lvlbadge manage">Manage</span></td><td>Everything in Basic, plus upload files (<code>putfile</code>), run library scripts (<code>run</code>), and remediate or collect forensic artifacts.</td></tr>
+      <tr><td class="pname">File collection</td><td><span class="lvlbadge manage">Manage</span></td><td>Download files, including executables, for analysis. Required alongside Advanced live response.</td></tr>
+      <tr><td class="pname">Vulnerability management</td><td><span class="lvlbadge read">Read</span></td><td>View software inventory, weaknesses, missing KBs, exposure scores, and baseline assessment results in Defender Vulnerability Management.</td></tr>
+      <tr><td class="pname">Remediation / Exception / Application handling</td><td><span class="lvlbadge manage">Manage</span></td><td>Three independent permissions: submit remediation requests and tickets (Remediation handling), create and manage recommendation exceptions (Exception handling), and block or unblock vulnerable applications (Application handling). Grant only the ones a persona needs.</td></tr>
+      <tr><td class="pname">Security baseline assessment</td><td><span class="lvlbadge manage">Manage</span></td><td>Create and manage baseline assessment profiles that measure devices against industry baselines such as CIS and STIG.</td></tr>
+      <tr><td class="pname">Core security settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>Onboard and offboard devices, manage alert suppression, automation folder exclusions, email notifications, and the evaluation lab. Custom indicators (IoC) are governed separately by Detection tuning.</td></tr>
+      <tr><td class="pname">Detection tuning</td><td><span class="lvlbadge manage">Manage</span></td><td>Custom detection rules, alert tuning, and threat indicators of compromise (IoC), including the indicator allow/block list.</td></tr>
+      <tr><td class="pname">System settings</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>Storage, SIEM and threat-intel API settings, and advanced portal settings. Roles and device groups are governed separately by Authorization.</td></tr>
+      <tr><td class="pname">Authorization</td><td><span class="lvlbadge read">Read</span> / <span class="lvlbadge manage">Manage</span></td><td>View or manage roles and device groups and assign users, without needing a broad Entra role.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- PERSONAS -->
+  <h2><span class="n">2</span>The personas</h2>
+  <p class="section-note">Job-shaped roles you actually assign, each expressed as the URBAC permission set it needs plus the device group scope that bounds it. Where a persona configures endpoint policy or drives automation, the Intune role or API permission it additionally requires is noted. Prefer the narrowest permission set and the tightest device group scope that covers the task.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="top">
+        <div class="ic">🛡️</div>
+        <div><h3>Security Administrator</h3><div class="role-line">URBAC: full set across all three groups. Entra: Security Administrator grants the equivalent automatically.</div></div>
+      </div>
+      <p>Owns endpoint defense end to end: response, live response, detection tuning, settings, vulnerability management, and role administration. Restrict to break-glass and elevate through PIM.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">👁️</div>
+        <div><h3>SOC Analyst · Tier-1 Reader</h3><div class="role-line">URBAC: Security data basics (read) + Vulnerability management (read)</div></div>
+      </div>
+      <p>Triage tier: views incidents, alerts, device timelines, hunting results, and exposure data, then escalates. Takes no action.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔎</div>
+        <div><h3>SOC Analyst · Tier-2 Responder</h3><div class="role-line">URBAC: Security data basics (read) + Alerts (manage) + Response (manage) + Basic live response (manage)</div></div>
+      </div>
+      <p>Contains threats: manages alerts, runs scans, collects investigation packages, isolates devices, restricts app execution, and works a basic live response session.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🕵️</div>
+        <div><h3>SOC Analyst · Tier-3 Threat Hunter</h3><div class="role-line">Adds Advanced live response (manage) + File collection (manage) + Detection tuning (manage)</div></div>
+      </div>
+      <p>Deep forensic work: runs scripts on devices, uploads tools, pulls full artifacts, and builds custom detections and IoC on top of Tier-2 rights.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🧰</div>
+        <div><h3>Endpoint Configuration Administrator</h3><div class="role-line">URBAC: Core security settings (manage) + Detection tuning (manage) + System settings (manage) · Intune: Endpoint Security Manager</div></div>
+      </div>
+      <p>Onboards devices and manages portal-side settings, indicators, and web content filtering. Antivirus, firewall, EDR, and ASR policies are authored in Intune under Intune RBAC.</p>
+      <div class="tags"><span class="src urbac">URBAC</span><span class="src intune">INTUNE</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">📉</div>
+        <div><h3>Vulnerability Management Administrator</h3><div class="role-line">URBAC: Vulnerability management (read) + Remediation / Exception / Application handling (manage) + Security baseline assessment (manage)</div></div>
+      </div>
+      <p>Drives Defender Vulnerability Management: raises remediation requests, sets exceptions, blocks vulnerable apps, and runs baseline assessments. No live response or alert management.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🎫</div>
+        <div><h3>Help Desk / Service Desk</h3><div class="role-line">URBAC: Security data basics (read), scoped to support device groups</div></div>
+      </div>
+      <p>Tier-1 support: checks device health and status for assigned device groups to work tickets. Takes no security action.</p>
+      <div class="tags"><span class="src urbac">URBAC</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🤖</div>
+        <div><h3>Automation / Service Principal</h3><div class="role-line">API: WindowsDefenderATP app permissions (Machine.Isolate, Machine.LiveResponse, Alert.ReadWrite.All). For hunting, use the Microsoft Graph security API.</div></div>
+      </div>
+      <p>Unattended SIEM, SOAR, or scripted integrations authenticate app-only through an Azure AD app registration. URBAC does not apply; grant only the API permissions the playbook uses.</p>
+      <div class="tags"><span class="src api">API</span><span class="src entra">ENTRA</span></div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="ic">🔑</div>
+        <div><h3>Global Reader / Global Administrator</h3><div class="role-line">Entra: Global Reader (read-all) · Global Administrator (break-glass)</div></div>
+      </div>
+      <p>Tenant-wide Entra roles. Global Reader gets read access to endpoint security data and vulnerability management, though not to MDE portal settings. Global Administrator is auto-mapped to the full URBAC permission set across all device groups, which is why it should be break-glass only.</p>
+      <div class="tags"><span class="src entra">ENTRA</span></div>
+    </div>
+  </div>
+
+  <!-- MATRIX -->
+  <h2><span class="n">3</span>Permission matrix: persona &times; task</h2>
+  <p class="section-note">Each cell shows the access level and the URBAC permission that grants it. Every grant is still bounded by the device groups assigned to the role. Tasks that URBAC does not cover show the alternative model instead. Watch the <span class="src intune">INTUNE</span> and <span class="src api">API</span> notes: those are the points where endpoint security reaches outside URBAC.</p>
+
+  <div class="tbl-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="rowhead">Task / capability</th>
+        <th>Security<br>Admin</th>
+        <th>Tier-1<br>Reader</th>
+        <th>Tier-2<br>Responder</th>
+        <th>Tier-3<br>Hunter</th>
+        <th>Vuln Mgmt<br>Admin</th>
+        <th>Config<br>Admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">View devices, alerts &amp; incidents<span class="sub">Bounded by device group</span></th>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Security data basics (read)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Manage alerts, run AV scan, collect package<span class="sub">Tag devices, start AIR</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Alerts (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Isolate device / restrict app execution<span class="sub">Approve pending remediation</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Respond</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Live response: basic session<span class="sub">Read-only commands + getfile</span></th>
+        <td><span class="lvl config"><span class="dot"></span>Run</span><span class="cellnote">Basic live response (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Run</span><span class="cellnote">Basic live response (manage)</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Run</span><span class="cellnote">Basic live response (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Live response: advanced<span class="sub">putfile, run scripts, remediate</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Run</span><span class="cellnote">Advanced live response + File collection</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Run</span><span class="cellnote">Advanced live response + File collection</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Advanced hunting + take actions<span class="sub">KQL over DeviceEvents etc.</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Query + act</span><span class="cellnote">Response / Alerts (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Query + act</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Query + act</span><span class="cellnote">Response (manage)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>Query</span><span class="cellnote">Security data basics (read)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Custom detection rules &amp; IoC<span class="sub">Scheduled hunting detections</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Detection tuning (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Detection tuning (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Detection tuning (manage)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Onboard / offboard devices, portal settings<span class="sub">Indicators, notifications, exclusions</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Core security settings (manage)</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Vulnerability exposure &amp; remediation<span class="sub">Tickets, exceptions, app blocking</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Remediation / Exception / Application handling</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Vulnerability management (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Vulnerability management (read)</span></td>
+        <td><span class="lvl read"><span class="dot"></span>View</span><span class="cellnote">Vulnerability management (read)</span></td>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Remediation / Exception / Application handling</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Endpoint security policy (AV, firewall, EDR, ASR)<span class="sub">Authored in Intune</span></th>
+        <td><span class="lvl none"><span class="dot"></span>None</span><span class="cellnote">needs <span class="src intune">INTUNE</span> role</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl config"><span class="dot"></span>Manage*</span><span class="cellnote">*via <span class="src intune">INTUNE</span> Endpoint Security Manager</span></td>
+      </tr>
+      <tr>
+        <th class="rowhead">Manage roles &amp; device groups<span class="sub">Delegate RBAC</span></th>
+        <td><span class="lvl full"><span class="dot"></span>Manage</span><span class="cellnote">Authorization (manage)</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+        <td><span class="lvl none"><span class="dot"></span>None</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="section-note" style="margin-top:12px">The Help Desk, Automation, and Global roles are omitted from the columns for width. Help Desk reads its assigned device groups only; the Automation service principal acts through <span class="src api">API</span> app permissions rather than URBAC; Global Reader reads every row and Global Administrator grants the right to assign the roles above.</p>
+
+  <!-- COMBINED SECTION -->
+  <h2><span class="n">4</span>Where Unified RBAC hands off to Intune and the API</h2>
+  <p class="section-note">Some endpoint work is configured in the Defender portal under URBAC, but the equivalent change through Intune policy or the REST API needs a different model, because URBAC does not extend to the Intune admin center or to app registrations. Plan both when a persona configures policy or an automation account acts through code.</p>
+
+  <div class="tbl-scroll">
+  <table class="combo">
+    <thead>
+      <tr>
+        <th class="rowhead">Capability</th>
+        <th>URBAC permission (Defender portal)</th>
+        <th>Same action via Intune / API</th>
+        <th>Role required there</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="rowhead">Onboarding &amp; portal security settings</th>
+        <td><span class="perm">Core security settings</span> (manage)</td>
+        <td>Onboarding package deployment through Intune</td>
+        <td><span class="src intune">INTUNE</span> Endpoint Security Manager or Policy and Profile Manager</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Endpoint security policy (AV, firewall, EDR, ASR)</th>
+        <td><span class="outscope">Outside URBAC scope</span></td>
+        <td>Endpoint Security node in the Intune admin center</td>
+        <td><span class="src intune">INTUNE</span> Endpoint Security Manager (or a custom Intune role)</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Security settings management (unenrolled devices)</th>
+        <td><span class="outscope">Outside URBAC scope</span></td>
+        <td>Policies flow to MDE-onboarded devices with no Intune enrollment</td>
+        <td><span class="src intune">INTUNE</span> RBAC. The legacy "Manage endpoint security settings" permission has no URBAC equivalent.</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Isolate device (unattended)</th>
+        <td><span class="perm">Response</span> (manage) for the portal</td>
+        <td><code>POST /api/machines/{id}/isolate</code></td>
+        <td><span class="src api">API</span> <code>Machine.Isolate</code> application permission</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Live response (scripted)</th>
+        <td><span class="perm">Basic</span> / <span class="perm">Advanced live response</span> (manage) for the portal</td>
+        <td><code>POST /api/machines/{id}/runliveresponse</code></td>
+        <td><span class="src api">API</span> <code>Machine.LiveResponse</code> application permission</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Alerts &amp; hunting (automation)</th>
+        <td><span class="perm">Alerts</span> (manage), <span class="perm">Security data basics</span> (read)</td>
+        <td><code>Alerts</code> API; hunting via the Microsoft Graph security API</td>
+        <td><span class="src api">API</span> <code>Alert.ReadWrite.All</code>; <code>ThreatHunting.Read.All</code> on Graph. The legacy MDE <code>AdvancedQuery.Read.All</code> hunting API began retirement in January 2026.</td>
+      </tr>
+      <tr>
+        <th class="rowhead">Custom indicators (IoC)</th>
+        <td><span class="perm">Detection tuning</span> (manage)</td>
+        <td><code>indicators</code> API endpoint</td>
+        <td><span class="src api">API</span> <code>Ti.ReadWrite</code> (own indicators) or <code>Ti.ReadWrite.All</code> (all tenant indicators)</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <div class="ci">🔐</div>
+    <div>
+      <h4>App-only automation shows the pattern</h4>
+      <p>A SOAR playbook that isolates a device authenticates app-only against the <code>WindowsDefenderATP</code> API and needs the <code>Machine.Isolate</code> application permission granted with admin consent, plus the OAuth client-credentials token from <code>api.securitycenter.microsoft.com</code>. URBAC does not apply to app registrations, so a Defender portal permission alone will not authorize the call. Grant only the specific API permissions the playbook uses (for example <code>Machine.Isolate</code> and <code>Machine.LiveResponse</code>), rather than <code>Machine.ReadWrite.All</code> across the tenant.</p>
+    </div>
+  </div>
+
+  <!-- OUT OF SCOPE -->
+  <h2><span class="n">5</span>Explicitly outside Unified RBAC</h2>
+  <p class="section-note">Microsoft lists these endpoint areas as outside URBAC scope. Assign the alternative model instead of trying to cover them with a Defender portal permission.</p>
+  <div class="tbl-scroll">
+  <table class="permtable">
+    <thead><tr><th>Capability</th><th>Permission model</th></tr></thead>
+    <tbody>
+      <tr><td class="pname">Endpoint security policies (AV, firewall, EDR, ASR, disk encryption)</td><td><span class="src intune">INTUNE</span> Intune RBAC in the Intune admin center</td></tr>
+      <tr><td class="pname">Security settings management for unenrolled devices</td><td><span class="src intune">INTUNE</span> Intune RBAC (legacy MDE permission, no URBAC equivalent)</td></tr>
+      <tr><td class="pname">Isolate, live response, scan via REST API</td><td><span class="src api">API</span> Azure AD app permissions (WindowsDefenderATP)</td></tr>
+      <tr><td class="pname">Advanced hunting &amp; alerts via REST API</td><td><span class="src api">API</span> Azure AD app permissions</td></tr>
+      <tr><td class="pname">Multi-tenant management (MSSP / GDAP)</td><td><span class="src entra">ENTRA</span> GDAP and multitenant URBAC</td></tr>
+      <tr><td class="pname">DLP / Insider Risk surfaced in the portal</td><td><span class="src entra">ENTRA</span> Microsoft Purview RBAC</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- NOTES -->
+  <h2><span class="n">6</span>Best-practice notes</h2>
+  <ul class="notes">
+    <li><strong>Build custom URBAC roles from specific permissions.</strong> Combine the exact permissions a persona needs (for example Security data basics plus Alerts plus Response for a Tier-2 responder) instead of assigning a broad Entra role. This is the least-privilege path URBAC is designed for.</li>
+    <li><strong>Scope every role to device groups.</strong> Permissions grant capability; device groups decide which machines the role reaches. A regional Tier-1 role scoped to "North America workstations" cannot see servers or other regions, even in the same tenant.</li>
+    <li><strong>Entra roles override URBAC.</strong> Assigning Security Administrator in Microsoft Entra grants the full endpoint URBAC equivalent automatically, so it is broader than a scoped custom role. Reach for the URBAC permission when you want a tight boundary.</li>
+    <li><strong>Global Administrator is over-privileged, not sidelined.</strong> Under URBAC, Global Administrator is auto-mapped to the full permission set (equivalent to Security Administrator), including live response and settings, across all device groups. Treat it as break-glass because of that reach, and do day-to-day work under a scoped role.</li>
+    <li><strong>Portal permission does not equal API permission.</strong> A persona with Response (manage) can isolate a device in the portal, but a scripted isolation needs the <code>Machine.Isolate</code> app permission. If an automation fails with an access error, the missing piece is almost always an app registration permission.</li>
+    <li><strong>Advanced live response needs File collection too.</strong> The legacy "advanced" tier maps to both Advanced live response (manage) and File collection (manage) in URBAC. Grant them together, and enable the Live response feature toggle under Advanced features first.</li>
+    <li><strong>Keep endpoint policy in Intune RBAC.</strong> Core security settings (manage) covers onboarding and portal settings, not antivirus, firewall, EDR, or ASR policy. Those need an Intune role such as Endpoint Security Manager.</li>
+    <li><strong>Elevate high-privilege roles just in time.</strong> Grant Security Administrator and Global Administrator through Microsoft Entra Privileged Identity Management (PIM) as time-boxed, approval-gated activations rather than standing assignments.</li>
+    <li><strong>Keep dedicated break-glass accounts.</strong> Maintain at least two cloud-only emergency-access accounts excluded from Conditional Access, and reserve Global Administrator for them.</li>
+    <li><strong>Separate duties and audit.</strong> Split configuration (Core security settings) from response (Response and live response), and monitor changes to indicators, custom detections, roles, and device groups in the unified audit log.</li>
+  </ul>
+
+  <footer class="page">
+    Reference model for Microsoft Defender for Endpoint Unified RBAC, plus the Intune and API handoffs. Permission names and scope per Microsoft Learn
+    (<a href="https://learn.microsoft.com/en-us/defender-xdr/custom-permissions-details">Permissions in Microsoft Defender unified RBAC</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-xdr/compare-rbac-roles">Map Defender unified RBAC permissions</a>,
+    <a href="https://learn.microsoft.com/en-us/defender-endpoint/machine-groups">Create and manage device groups</a>,
+    <a href="https://learn.microsoft.com/en-us/intune/device-security/microsoft-defender/security-settings-management">Security settings management</a>),
+    as of August 2026. Verify permission names against your tenant, since URBAC rollout and catalog contents change over time.
+  </footer>
+
+</div>
+</body>
+</html>
