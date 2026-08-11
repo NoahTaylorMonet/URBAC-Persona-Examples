@@ -219,8 +219,16 @@ footer.page a:hover { text-decoration: underline; }
   <header class="page">
     <div class="eyebrow">Microsoft Defender for Office 365 · Unified RBAC</div>
     <h1>Email Security Personas &amp; Unified RBAC Permissions</h1>
-    <p class="lede">Common roles for managing email security, mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions. URBAC is the default model for new Defender for Office 365 Plan 2 organizations as of July 2026. Tasks outside URBAC scope (mail flow, message trace, PowerShell) fall back to <strong>Exchange Online RBAC</strong>, and those combinations are called out.</p>
+    <p class="lede">Common roles for managing email security, mapped to <strong>Microsoft Defender Unified RBAC (URBAC)</strong> permissions. Microsoft has been moving Defender for Office 365 Plan 2 organizations to URBAC as the default model on a rolling basis&mdash;on a slower timeline than Endpoint and Identity, so confirm under Permissions &amp; roles whether your tenant is on URBAC or still on the legacy Email &amp; collaboration roles before assigning anything below. Tasks outside URBAC scope (mail flow, message trace, PowerShell) fall back to <strong>Exchange Online RBAC</strong>, and those combinations are called out.</p>
   </header>
+
+  <div class="callout">
+    <div class="ci">📄</div>
+    <div>
+      <h4>Guidance only</h4>
+      <p>These personas and permission mappings are illustrative examples, not a configuration baseline. They reflect Microsoft Learn documentation captured on 3 August 2026, they are static, and Microsoft's permission catalog, role names, and RBAC rollout change over time. Verify every permission against your own tenant before you assign it, and treat this page as a starting point rather than an authoritative source.</p>
+    </div>
+  </div>
 
   <div class="callout info">
     <div class="ci">📌</div>
@@ -513,7 +521,7 @@ footer.page a:hover { text-decoration: underline; }
 
   <!-- COMBINED SECTION -->
   <h2><span class="n">4</span>Where Unified RBAC and Exchange Online RBAC combine</h2>
-  <p class="section-note">Several features are configured in the Defender portal under URBAC, but the <strong>same action through PowerShell or mail flow needs an Exchange Online role</strong>, because URBAC does not extend to PowerShell or the Exchange admin center. Plan both when a persona or an automation account works through cmdlets.</p>
+  <p class="section-note">Several features are configured in the Defender portal under URBAC, but the <strong>same action through PowerShell, mail flow, or a compliance workflow needs an Exchange Online or Purview role</strong>, because URBAC does not extend to PowerShell, the Exchange admin center, or the Purview portal. Plan both when a persona or an automation account works through cmdlets.</p>
 
   <div class="tbl-scroll">
   <table class="combo">
@@ -522,7 +530,7 @@ footer.page a:hover { text-decoration: underline; }
         <th class="rowhead">Feature</th>
         <th>URBAC permission (Defender portal)</th>
         <th>Same action via PowerShell / mail flow</th>
-        <th>Exchange Online role required there</th>
+        <th>Role required there</th>
       </tr>
     </thead>
     <tbody>
